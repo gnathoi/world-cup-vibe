@@ -1,8 +1,16 @@
 // openfootball adapter: fetch + parse with Zod + cache + stale fallback.
 // The whole rest of the app reads via getMatches() — never the raw URL.
+//
+// The real openfootball worldcup.json shape (verified against the live URL):
+//   - team1, team2: country NAME strings (e.g. "Mexico")
+//   - time: "HH:MM UTC±X" (e.g. "19:30 UTC-4")
+//   - round: free-text ("Matchday 1", "Round of 16", "Quarter-final", "Final")
+//   - score is optional and absent pre-tournament
+//   - goals1/goals2/cards1/cards2 may not appear at all pre-tournament
 
 import { z } from "zod";
 import { getOpenfootballCache, setOpenfootballCache } from "./db";
+import { TEAMS_2026 } from "./teams";
 import type { CardEvent, GoalEvent, Match } from "./types";
 
 // ----- Raw schema (snapshot of the openfootball worldcup.json shape) -----
@@ -10,12 +18,6 @@ import type { CardEvent, GoalEvent, Match } from "./types";
 const RawScoreSchema = z.object({
   ft: z.tuple([z.number(), z.number()]).optional(),
   ht: z.tuple([z.number(), z.number()]).optional(),
-});
-
-const RawTeamSchema = z.object({
-  key: z.string().optional(),
-  code: z.string(),
-  name: z.string(),
 });
 
 const RawGoalSchema = z.object({
@@ -37,10 +39,11 @@ const RawMatchSchema = z.object({
   round: z.string().optional(),
   date: z.string(),
   time: z.string().optional(),
-  team1: RawTeamSchema,
-  team2: RawTeamSchema,
+  team1: z.string(),
+  team2: z.string(),
   score: RawScoreSchema.optional(),
   group: z.string().optional(),
+  ground: z.string().optional(),
   goals1: z.array(RawGoalSchema).optional(),
   goals2: z.array(RawGoalSchema).optional(),
   cards1: z.array(RawCardSchema).optional(),
@@ -53,18 +56,20 @@ const RawRootSchema = z.object({
   matches: z.array(RawMatchSchema),
 });
 
-// ----- Adapter -----------------------------------------------------------
+// ----- Helpers -----------------------------------------------------------
 
 function normalizeRound(raw: string | undefined): Match["round"] {
   if (!raw) return "group";
   const r = raw.toLowerCase();
-  if (r.includes("final") && !r.includes("semi") && !r.includes("third"))
-    return "final";
+  // Order matters here: check the more-specific labels first because
+  // "Quarter-final" / "Semi-final" / "third place" all contain the word "final".
   if (r.includes("third")) return "third_place";
   if (r.includes("semi")) return "semi";
   if (r.includes("quarter")) return "quarter";
   if (r.includes("round of 16") || r.includes("r16")) return "round_of_16";
   if (r.includes("round of 32") || r.includes("r32")) return "round_of_32";
+  if (r === "final" || r.endsWith(" final") || r.startsWith("final"))
+    return "final";
   return "group";
 }
 
@@ -79,18 +84,69 @@ function buildMatchId(date: string, home: string, away: string): string {
   return `${date}-${home}-${away}`.toLowerCase().replace(/[^a-z0-9-]/g, "-");
 }
 
+// Country name -> { code, name } lookup. TEAMS_2026 is built case-insensitively.
+const NAME_TO_TEAM = new Map<string, { code: string; name: string }>();
+for (const t of TEAMS_2026) {
+  NAME_TO_TEAM.set(t.name.toLowerCase(), { code: t.code, name: t.name });
+}
+// Common openfootball spellings that differ from FIFA conventions.
+const NAME_ALIASES: Record<string, string> = {
+  türkiye: "Türkiye",
+  turkiye: "Türkiye",
+  turkey: "Türkiye",
+  "south korea": "South Korea",
+  "korea republic": "South Korea",
+  iran: "Iran",
+  "ivory coast": "Ivory Coast",
+  "cote d'ivoire": "Ivory Coast",
+  "côte d'ivoire": "Ivory Coast",
+  usa: "United States",
+  "united states": "United States",
+};
+
+function resolveTeam(name: string): { code: string; name: string } {
+  const lower = name.toLowerCase().trim();
+  const canonical = NAME_ALIASES[lower] ?? name;
+  const hit = NAME_TO_TEAM.get(canonical.toLowerCase());
+  if (hit) return hit;
+  // Fallback: synthesize a 3-letter code from the alphabetic chars of the name.
+  // This covers placeholder names like "Winner of Group A" or qualifiers not
+  // in the static table yet, without throwing.
+  const synth = name
+    .replace(/[^a-zA-Z]/g, "")
+    .toUpperCase()
+    .slice(0, 3);
+  return { code: synth || "TBD", name };
+}
+
+// Parse "HH:MM UTC±X" or just "HH:MM" against a date string into a true UTC ISO.
+function parseKickoffUtc(date: string, time: string | undefined): string {
+  if (!time) {
+    return new Date(`${date}T00:00:00Z`).toISOString();
+  }
+  const m = time.match(/^(\d{1,2}):(\d{2})(?:\s+UTC([+-]\d{1,2}))?/);
+  if (!m) return new Date(`${date}T00:00:00Z`).toISOString();
+  const hh = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  const offset = m[3] ? parseInt(m[3], 10) : 0;
+  // local_time + (-offset) = UTC. e.g. "19:30 UTC-4" -> 23:30 UTC.
+  const [Y, M, D] = date.split("-").map(Number);
+  const ms = Date.UTC(Y, M - 1, D, hh - offset, mm, 0);
+  return new Date(ms).toISOString();
+}
+
+// ----- Adapter -----------------------------------------------------------
+
 export function normalizeRaw(rawJson: unknown): Match[] {
   const root = RawRootSchema.parse(rawJson);
   const matches: Match[] = [];
 
   for (let i = 0; i < root.matches.length; i++) {
     const m = root.matches[i];
-    const home = m.team1;
-    const away = m.team2;
+    const home = resolveTeam(m.team1);
+    const away = resolveTeam(m.team2);
     const id = buildMatchId(m.date, home.code, away.code);
-    const kickoffUtc = m.time
-      ? new Date(`${m.date}T${m.time}:00Z`).toISOString()
-      : new Date(`${m.date}T00:00:00Z`).toISOString();
+    const kickoffUtc = parseKickoffUtc(m.date, m.time);
 
     const goals: GoalEvent[] = [];
     for (const g of m.goals1 ?? []) {
@@ -121,7 +177,8 @@ export function normalizeRaw(rawJson: unknown): Match[] {
         minute: c.minute,
         playerName: c.name,
         teamCode: home.code,
-        cardType: c.type === "red" || c.type === "yellow_red" ? "red" : "yellow",
+        cardType:
+          c.type === "red" || c.type === "yellow_red" ? "red" : "yellow",
       });
     }
     for (const c of m.cards2 ?? []) {
@@ -130,7 +187,8 @@ export function normalizeRaw(rawJson: unknown): Match[] {
         minute: c.minute,
         playerName: c.name,
         teamCode: away.code,
-        cardType: c.type === "red" || c.type === "yellow_red" ? "red" : "yellow",
+        cardType:
+          c.type === "red" || c.type === "yellow_red" ? "red" : "yellow",
       });
     }
 
@@ -141,8 +199,8 @@ export function normalizeRaw(rawJson: unknown): Match[] {
       kickoffUtc,
       group: m.group,
       round: normalizeRound(m.round),
-      home: { code: home.code, name: home.name },
-      away: { code: away.code, name: away.name },
+      home,
+      away,
       status: matchStatusFromScore(m.score),
       score: m.score?.ft
         ? {
@@ -158,7 +216,6 @@ export function normalizeRaw(rawJson: unknown): Match[] {
     });
   }
 
-  // Sort by kickoff for deterministic downstream consumption.
   matches.sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc));
   return matches;
 }
@@ -217,7 +274,6 @@ export async function getMatches(): Promise<Match[]> {
   return cache?.matches ?? [];
 }
 
-// Useful for components that want a "data may be stale" stamp.
 export async function getCacheAge(): Promise<{
   fetchedAt: string | null;
   ageMs: number | null;
