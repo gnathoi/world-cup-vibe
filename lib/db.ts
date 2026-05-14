@@ -1,357 +1,397 @@
-// Storage shim: dev writes/reads data/sweep.json, prod uses Vercel KV (Upstash).
-// Every other file in the app imports from here; no one touches @vercel/kv or the
-// JSON file directly. Storage swaps via STORAGE_DRIVER env var (default: "json"
-// in development, "kv" in production).
+// Storage layer: thin typed wrapper over Supabase Postgres.
+//
+// Every other file imports from here. No one else touches @supabase/supabase-js.
+// All calls use the service-role client (server-side only); RLS is default-deny
+// at the table level so accidental anon access fails closed.
 
-import { promises as fs } from "node:fs";
-import path from "node:path";
+import { getServiceClient } from "./supabase";
+import { KV } from "./kv-keys";
 import type {
   Allocation,
   AllocationRecord,
   Comment,
+  Match,
   Participant,
   Prediction,
   Special,
-  SweepData,
-  Match,
+  SpecialConditionType,
 } from "./types";
 
-// ----- Driver selection ---------------------------------------------------
+// ----- row <-> domain mappers -------------------------------------------
 
-type Driver = "json" | "kv";
-
-function resolveDriver(): Driver {
-  const explicit = process.env.STORAGE_DRIVER as Driver | undefined;
-  if (explicit === "json" || explicit === "kv") return explicit;
-  return process.env.NODE_ENV === "production" ? "kv" : "json";
-}
-
-// ----- JSON driver --------------------------------------------------------
-
-const JSON_PATH = path.join(process.cwd(), "data", "sweep.json");
-
-async function readJsonStore(): Promise<SweepData> {
-  try {
-    const raw = await fs.readFile(JSON_PATH, "utf8");
-    return JSON.parse(raw) as SweepData;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-      const empty: SweepData = {
-        participants: [],
-        allocation: null,
-        comments: [],
-        predictions: [],
-        specials: [],
-        potPaidBy: [],
-        openfootballCache: null,
-        specialCursor: null,
-      };
-      await writeJsonStore(empty);
-      return empty;
-    }
-    throw err;
-  }
-}
-
-async function writeJsonStore(data: SweepData): Promise<void> {
-  await fs.mkdir(path.dirname(JSON_PATH), { recursive: true });
-  await fs.writeFile(JSON_PATH, JSON.stringify(data, null, 2), "utf8");
-}
-
-// In-process mutex so concurrent server actions in dev don't race the JSON file.
-let writeChain: Promise<void> = Promise.resolve();
-function withJsonMutex<T>(fn: () => Promise<T>): Promise<T> {
-  const result = writeChain.then(fn);
-  writeChain = result.then(
-    () => undefined,
-    () => undefined,
-  );
-  return result;
-}
-
-// ----- KV driver (Upstash via @vercel/kv) ---------------------------------
-// Loaded lazily so dev runs without KV envs configured.
-
-type KvClient = {
-  get<T>(key: string): Promise<T | null>;
-  set<T>(key: string, value: T): Promise<unknown>;
-  del(key: string): Promise<unknown>;
-  lpush(key: string, ...values: unknown[]): Promise<unknown>;
-  lrange<T>(key: string, start: number, end: number): Promise<T[]>;
+type ParticipantRow = {
+  id: string;
+  email: string;
+  display_name: string;
+  signed_up_at: string;
+  spectator: boolean;
+  paid_in: boolean;
 };
 
-let kvClient: KvClient | null = null;
-async function getKv(): Promise<KvClient> {
-  if (!kvClient) {
-    const mod = await import("@vercel/kv");
-    kvClient = mod.kv as unknown as KvClient;
-  }
-  return kvClient;
+function toParticipant(r: ParticipantRow): Participant {
+  return {
+    id: r.id,
+    email: r.email,
+    displayName: r.display_name,
+    signedUpAt: r.signed_up_at,
+    spectator: r.spectator,
+    paidIn: r.paid_in,
+  };
 }
 
-// ----- Public API ---------------------------------------------------------
-// The contract is the same regardless of driver. Each method is implemented
-// for both drivers; the JSON driver reads/writes the single SweepData file,
-// the KV driver uses discrete keys.
+type CommentRow = {
+  id: string;
+  participant_id: string | null;
+  display_name: string;
+  body: string;
+  match_id: string | null;
+  posted_at: string;
+};
 
-import { KV } from "./kv-keys";
+function toComment(r: CommentRow): Comment {
+  return {
+    id: r.id,
+    participantId: r.participant_id ?? "",
+    participantDisplayName: r.display_name,
+    body: r.body,
+    matchId: r.match_id,
+    postedAt: r.posted_at,
+  };
+}
 
-const driver = resolveDriver();
+type PredictionRow = {
+  match_id: string;
+  participant_id: string;
+  home_score: number;
+  away_score: number;
+  scorer_name: string | null;
+  submitted_at: string;
+  locked_at: string | null;
+};
+
+function toPrediction(r: PredictionRow): Prediction {
+  return {
+    matchId: r.match_id,
+    participantId: r.participant_id,
+    homeScore: r.home_score,
+    awayScore: r.away_score,
+    scorerName: r.scorer_name ?? undefined,
+    submittedAt: r.submitted_at,
+    lockedAt: r.locked_at ?? undefined,
+  };
+}
+
+type SpecialRow = {
+  id: string;
+  label: string;
+  payout_gbp: number;
+  condition_type: SpecialConditionType;
+  condition_params: Record<string, string | number | boolean>;
+  owner_participant_id: string | null;
+  status: "pending" | "claimed" | "expired";
+  claimed_at: string | null;
+  claimed_match_id: string | null;
+};
+
+function toSpecial(r: SpecialRow): Special {
+  return {
+    id: r.id,
+    label: r.label,
+    payoutGbp: r.payout_gbp,
+    condition: { type: r.condition_type, params: r.condition_params },
+    ownerParticipantId: r.owner_participant_id,
+    status: r.status,
+    claimedAt: r.claimed_at ?? undefined,
+    claimedMatchId: r.claimed_match_id ?? undefined,
+  };
+}
+
+function fromSpecial(s: Special): SpecialRow {
+  return {
+    id: s.id,
+    label: s.label,
+    payout_gbp: s.payoutGbp,
+    condition_type: s.condition.type,
+    condition_params: s.condition.params,
+    owner_participant_id: s.ownerParticipantId,
+    status: s.status,
+    claimed_at: s.claimedAt ?? null,
+    claimed_match_id: s.claimedMatchId ?? null,
+  };
+}
+
+// ----- participants ------------------------------------------------------
 
 export async function getParticipants(): Promise<Participant[]> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return store.participants;
-  }
-  const kv = await getKv();
-  return (await kv.get<Participant[]>(KV.PARTICIPANTS)) ?? [];
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from("participants")
+    .select("*")
+    .order("signed_up_at", { ascending: true });
+  if (error) throw error;
+  return (data as ParticipantRow[]).map(toParticipant);
 }
 
 export async function getParticipantByEmail(
   email: string,
 ): Promise<Participant | null> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return (
-      store.participants.find(
-        (p) => p.email.toLowerCase() === email.toLowerCase(),
-      ) ?? null
-    );
-  }
-  const kv = await getKv();
-  return await kv.get<Participant>(KV.PARTICIPANT_BY_EMAIL(email));
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from("participants")
+    .select("*")
+    .ilike("email", email)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toParticipant(data as ParticipantRow) : null;
 }
 
-export async function getParticipantById(id: string): Promise<Participant | null> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return store.participants.find((p) => p.id === id) ?? null;
-  }
-  const kv = await getKv();
-  return await kv.get<Participant>(KV.PARTICIPANT_BY_ID(id));
+export async function getParticipantById(
+  id: string,
+): Promise<Participant | null> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from("participants")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toParticipant(data as ParticipantRow) : null;
 }
 
 export async function addParticipant(p: Participant): Promise<void> {
-  if (driver === "json") {
-    await withJsonMutex(async () => {
-      const store = await readJsonStore();
-      store.participants.push(p);
-      await writeJsonStore(store);
-    });
-    return;
-  }
-  const kv = await getKv();
-  const list = (await kv.get<Participant[]>(KV.PARTICIPANTS)) ?? [];
-  list.push(p);
-  await kv.set(KV.PARTICIPANTS, list);
-  await kv.set(KV.PARTICIPANT_BY_ID(p.id), p);
-  await kv.set(KV.PARTICIPANT_BY_EMAIL(p.email), p);
+  const sb = getServiceClient();
+  const { error } = await sb.from("participants").insert({
+    id: p.id,
+    email: p.email,
+    display_name: p.displayName,
+    signed_up_at: p.signedUpAt,
+    spectator: p.spectator,
+    paid_in: p.paidIn,
+  });
+  if (error) throw error;
 }
 
+// ----- allocation --------------------------------------------------------
+
 export async function getAllocation(): Promise<AllocationRecord | null> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return store.allocation;
-  }
-  const kv = await getKv();
-  const seed = await kv.get<string>(KV.ALLOCATION_SEED);
-  if (!seed) return null;
-  const allocatedAt = (await kv.get<string>(KV.ALLOCATION_AT)) ?? "";
-  const byParticipant =
-    (await kv.get<Allocation[]>(KV.ALLOCATIONS)) ?? [];
-  return { seed, allocatedAt, byParticipant };
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from("allocations")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    seed: data.seed,
+    allocatedAt: data.allocated_at,
+    byParticipant: (data.by_participant as Allocation[]) ?? [],
+  };
 }
 
 export async function setAllocation(record: AllocationRecord): Promise<void> {
-  if (driver === "json") {
-    await withJsonMutex(async () => {
-      const store = await readJsonStore();
-      store.allocation = record;
-      await writeJsonStore(store);
-    });
-    return;
-  }
-  const kv = await getKv();
-  await kv.set(KV.ALLOCATION_SEED, record.seed);
-  await kv.set(KV.ALLOCATION_AT, record.allocatedAt);
-  await kv.set(KV.ALLOCATIONS, record.byParticipant);
+  const sb = getServiceClient();
+  const { error } = await sb.from("allocations").upsert(
+    {
+      id: 1,
+      seed: record.seed,
+      allocated_at: record.allocatedAt,
+      by_participant: record.byParticipant,
+    },
+    { onConflict: "id" },
+  );
+  if (error) throw error;
 }
 
+// ----- comments (banter) -------------------------------------------------
+
 export async function getComments(matchId: string | null): Promise<Comment[]> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return store.comments.filter((c) => c.matchId === matchId);
-  }
-  const kv = await getKv();
-  const key =
-    matchId === null ? KV.COMMENTS_GLOBAL : KV.COMMENTS_MATCH(matchId);
-  const list = await kv.lrange<Comment>(key, 0, -1);
-  return list.reverse(); // LPUSH stores newest-first; we want chronological
+  const sb = getServiceClient();
+  let q = sb.from("comments").select("*");
+  if (matchId === null) q = q.is("match_id", null);
+  else q = q.eq("match_id", matchId);
+  const { data, error } = await q
+    .order("posted_at", { ascending: true })
+    .limit(500);
+  if (error) throw error;
+  return (data as CommentRow[]).map(toComment);
 }
 
 export async function appendComment(c: Comment): Promise<void> {
-  if (driver === "json") {
-    await withJsonMutex(async () => {
-      const store = await readJsonStore();
-      store.comments.push(c);
-      await writeJsonStore(store);
-    });
-    return;
-  }
-  const kv = await getKv();
-  const key =
-    c.matchId === null ? KV.COMMENTS_GLOBAL : KV.COMMENTS_MATCH(c.matchId);
-  await kv.lpush(key, c);
+  const sb = getServiceClient();
+  const { error } = await sb.from("comments").insert({
+    id: c.id,
+    participant_id: c.participantId,
+    display_name: c.participantDisplayName,
+    body: c.body,
+    match_id: c.matchId,
+    posted_at: c.postedAt,
+  });
+  if (error) throw error;
 }
+
+// ----- predictions -------------------------------------------------------
 
 export async function getPredictionsByParticipant(
   participantId: string,
 ): Promise<Prediction[]> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return store.predictions.filter((p) => p.participantId === participantId);
-  }
-  const kv = await getKv();
-  return (
-    (await kv.get<Prediction[]>(
-      KV.PREDICTIONS_BY_PARTICIPANT(participantId),
-    )) ?? []
-  );
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from("predictions")
+    .select("*")
+    .eq("participant_id", participantId);
+  if (error) throw error;
+  return (data as PredictionRow[]).map(toPrediction);
 }
 
 export async function upsertPrediction(p: Prediction): Promise<void> {
-  if (driver === "json") {
-    await withJsonMutex(async () => {
-      const store = await readJsonStore();
-      const idx = store.predictions.findIndex(
-        (x) =>
-          x.matchId === p.matchId && x.participantId === p.participantId,
-      );
-      if (idx >= 0) store.predictions[idx] = p;
-      else store.predictions.push(p);
-      await writeJsonStore(store);
-    });
-    return;
-  }
-  const kv = await getKv();
-  const list =
-    (await kv.get<Prediction[]>(
-      KV.PREDICTIONS_BY_PARTICIPANT(p.participantId),
-    )) ?? [];
-  const idx = list.findIndex((x) => x.matchId === p.matchId);
-  if (idx >= 0) list[idx] = p;
-  else list.push(p);
-  await kv.set(KV.PREDICTIONS_BY_PARTICIPANT(p.participantId), list);
+  const sb = getServiceClient();
+  const { error } = await sb.from("predictions").upsert(
+    {
+      match_id: p.matchId,
+      participant_id: p.participantId,
+      home_score: p.homeScore,
+      away_score: p.awayScore,
+      scorer_name: p.scorerName ?? null,
+      submitted_at: p.submittedAt,
+      locked_at: p.lockedAt ?? null,
+    },
+    { onConflict: "match_id,participant_id" },
+  );
+  if (error) throw error;
 }
 
+// ----- specials ----------------------------------------------------------
+
 export async function getSpecials(): Promise<Special[]> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return store.specials;
-  }
-  const kv = await getKv();
-  return (await kv.get<Special[]>(KV.SPECIALS_LIST)) ?? [];
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from("specials")
+    .select("*")
+    .order("payout_gbp", { ascending: false });
+  if (error) throw error;
+  return (data as SpecialRow[]).map(toSpecial);
 }
 
 export async function setSpecials(specials: Special[]): Promise<void> {
-  if (driver === "json") {
-    await withJsonMutex(async () => {
-      const store = await readJsonStore();
-      store.specials = specials;
-      await writeJsonStore(store);
-    });
+  const sb = getServiceClient();
+  if (specials.length === 0) {
+    const { error } = await sb.from("specials").delete().neq("id", "__never__");
+    if (error) throw error;
     return;
   }
-  const kv = await getKv();
-  await kv.set(KV.SPECIALS_LIST, specials);
+  const { error } = await sb
+    .from("specials")
+    .upsert(specials.map(fromSpecial), { onConflict: "id" });
+  if (error) throw error;
+}
+
+// ----- kv_store helpers (used for openfootball cache + specials cursor) --
+
+async function kvGet<T>(key: string): Promise<T | null> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from("kv_store")
+    .select("value")
+    .eq("key", key)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? (data.value as T) : null;
+}
+
+async function kvSet(key: string, value: unknown): Promise<void> {
+  const sb = getServiceClient();
+  const { error } = await sb
+    .from("kv_store")
+    .upsert({ key, value }, { onConflict: "key" });
+  if (error) throw error;
 }
 
 export async function getSpecialCursor(): Promise<string | null> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return store.specialCursor;
-  }
-  const kv = await getKv();
-  return await kv.get<string>(KV.SPECIAL_CURSOR);
+  return await kvGet<string>(KV.SPECIAL_CURSOR);
 }
 
 export async function setSpecialCursor(cursor: string): Promise<void> {
-  if (driver === "json") {
-    await withJsonMutex(async () => {
-      const store = await readJsonStore();
-      store.specialCursor = cursor;
-      await writeJsonStore(store);
-    });
-    return;
-  }
-  const kv = await getKv();
-  await kv.set(KV.SPECIAL_CURSOR, cursor);
+  await kvSet(KV.SPECIAL_CURSOR, cursor);
 }
 
 export async function getOpenfootballCache(): Promise<{
   matches: Match[];
   fetchedAt: string;
 } | null> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return store.openfootballCache;
-  }
-  const kv = await getKv();
-  return await kv.get(KV.OPENFOOTBALL_CACHE);
+  return await kvGet<{ matches: Match[]; fetchedAt: string }>(
+    KV.OPENFOOTBALL_CACHE,
+  );
 }
 
 export async function setOpenfootballCache(payload: {
   matches: Match[];
   fetchedAt: string;
 }): Promise<void> {
-  if (driver === "json") {
-    await withJsonMutex(async () => {
-      const store = await readJsonStore();
-      store.openfootballCache = payload;
-      await writeJsonStore(store);
-    });
-    return;
-  }
-  const kv = await getKv();
-  await kv.set(KV.OPENFOOTBALL_CACHE, payload);
+  await kvSet(KV.OPENFOOTBALL_CACHE, payload);
 }
 
+// ----- pot (paid-in flags live on the participants table) ----------------
+
 export async function getPotPaidBy(): Promise<string[]> {
-  if (driver === "json") {
-    const store = await readJsonStore();
-    return store.potPaidBy;
-  }
-  const kv = await getKv();
-  return (await kv.get<string[]>(KV.POT_PAID)) ?? [];
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from("participants")
+    .select("id")
+    .eq("paid_in", true);
+  if (error) throw error;
+  return (data as { id: string }[]).map((r) => r.id);
 }
 
 export async function setPotPaidBy(participantIds: string[]): Promise<void> {
-  if (driver === "json") {
-    await withJsonMutex(async () => {
-      const store = await readJsonStore();
-      store.potPaidBy = participantIds;
-      await writeJsonStore(store);
-    });
-    return;
+  const sb = getServiceClient();
+  const idSet = new Set(participantIds);
+  // Fetch all participants so we know which to flip.
+  const { data: all, error: fetchErr } = await sb
+    .from("participants")
+    .select("id, paid_in");
+  if (fetchErr) throw fetchErr;
+  const toPaid: string[] = [];
+  const toUnpaid: string[] = [];
+  for (const r of (all as { id: string; paid_in: boolean }[]) ?? []) {
+    const should = idSet.has(r.id);
+    if (should !== r.paid_in) {
+      (should ? toPaid : toUnpaid).push(r.id);
+    }
   }
-  const kv = await getKv();
-  await kv.set(KV.POT_PAID, participantIds);
+  if (toPaid.length > 0) {
+    const { error } = await sb
+      .from("participants")
+      .update({ paid_in: true })
+      .in("id", toPaid);
+    if (error) throw error;
+  }
+  if (toUnpaid.length > 0) {
+    const { error } = await sb
+      .from("participants")
+      .update({ paid_in: false })
+      .in("id", toUnpaid);
+    if (error) throw error;
+  }
 }
 
-// Useful only in tests / local resets
+// ----- test reset --------------------------------------------------------
+// Only safe to call against a non-production project. Truncates everything.
+
 export async function _resetStoreForTests(): Promise<void> {
-  if (driver !== "json") {
-    throw new Error("_resetStoreForTests is only valid with the JSON driver");
+  const sb = getServiceClient();
+  const tables = [
+    "predictions",
+    "comments",
+    "specials",
+    "allocations",
+    "kv_store",
+    "participants",
+  ];
+  for (const t of tables) {
+    const { error } = await sb.from(t).delete().neq("id", "__never__");
+    if (error && !error.message.includes("does not exist")) {
+      console.warn(`reset: ${t} -> ${error.message}`);
+    }
   }
-  const empty: SweepData = {
-    participants: [],
-    allocation: null,
-    comments: [],
-    predictions: [],
-    specials: [],
-    potPaidBy: [],
-    openfootballCache: null,
-    specialCursor: null,
-  };
-  await writeJsonStore(empty);
 }
