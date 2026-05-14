@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
+@theme {
+  --color-cream: #f5eddc;
+  --color-sepia: #d9b26a;
+  --color-sepia-dark: #8a6f3a;
+  --color-scarlet: #b8331f;
+  --color-cobalt: #2a4e9e;
+  --color-ink: #1a1a1a;
+
+  --font-display: var(--font-alfa-slab-one), Georgia, serif;
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-frame: 0px;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+.halftone {
+  /* CSS-only halftone: tiled radial dots, no external asset needed. */
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    var(--color-sepia-dark) 0,
+    var(--color-sepia-dark) 0.6px,
+    transparent 1.4px,
+    transparent 100%
+  );
+  background-size: 6px 6px;
+  background-position: 0 0;
+  mix-blend-mode: multiply;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.frame-double {
+  position: relative;
+  border: 1px solid var(--color-scarlet);
+  padding: 4px;
+}
+.frame-double::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid var(--color-ink);
+  pointer-events: none;
+}
+.frame-double > * {
+  position: relative;
+  z-index: 1;
+}
+
+.frame-secondary {
+  border-color: var(--color-sepia-dark);
+}
+.frame-secondary::before {
+  border-color: var(--color-ink);
+}
+
+.frame-chalkboard {
+  border: 1px solid var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+.frame-chalkboard::before {
+  display: none;
+}
+
+.stamp {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  line-height: 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-cobalt);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
