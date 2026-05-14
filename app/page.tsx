@@ -27,7 +27,8 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
   played: number;
   remaining: number;
 } {
-  const played = matches.filter((m) => m.score).length;
+  const playedMatches = matches.filter((m) => !!m.score);
+  const played = playedMatches.length;
   const remaining = matches.length - played;
   const nowIso = new Date().toISOString();
   const nextScheduled = matches.find(
@@ -39,13 +40,27 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
     .toLocaleString("en-GB", { month: "short" })
     .toUpperCase()}`;
   const matchDay = ref?.matchDay ? `MATCH DAY ${ref.matchDay}` : "PRE-TOURNAMENT";
-  const stage =
-    matches.some((m) => m.round !== "group")
-      ? "KNOCKOUT STAGE"
-      : "GROUP STAGE";
+
+  // Stage reflects what's already been played, not what's on the calendar.
+  // openfootball ships the full bracket as `scheduled` from day one, so
+  // "some match has round !== group" is true even pre-tournament.
+  let stage = "AWAITING KICKOFF";
+  if (matches.length > 0) {
+    if (played === 0) {
+      stage = "GROUP STAGE";
+    } else {
+      const playedRounds = new Set(playedMatches.map((m) => m.round));
+      if (playedRounds.has("final")) stage = "FINAL";
+      else if (playedRounds.has("semi")) stage = "SEMI-FINALS";
+      else if (playedRounds.has("quarter")) stage = "QUARTER-FINALS";
+      else if (playedRounds.has("round_of_16")) stage = "ROUND OF 16";
+      else if (playedRounds.has("round_of_32")) stage = "ROUND OF 32";
+      else stage = "GROUP STAGE";
+    }
+  }
   return {
     label: `${matchDay} / ${day}`,
-    stage: matches.length === 0 ? "AWAITING KICKOFF" : stage,
+    stage,
     played,
     remaining,
   };
