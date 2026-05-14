@@ -18,7 +18,7 @@ export default function MastheadBar({ signedInAs }: Props) {
           href="/"
           className="font-display text-3xl sm:text-4xl tracking-tight text-center"
         >
-          GOAL! THE 1966 SWEEPSTAKE
+          GOAL! THE 2026 SWEEPSTAKE
         </Link>
         <div className="text-right">
           {signedInAs ? (

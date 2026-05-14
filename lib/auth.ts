@@ -12,7 +12,7 @@ export type SessionData = {
   email?: string;
 };
 
-const SESSION_COOKIE = "goal-1966-session";
+const SESSION_COOKIE = "goal-2026-session";
 
 function sessionOptions(): SessionOptions {
   const password = process.env.SESSION_SECRET;

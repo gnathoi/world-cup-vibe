@@ -1,5 +1,6 @@
 import { getAllocation, getParticipants, getSpecials } from "@/lib/db";
 import MastheadBar from "@/components/MastheadBar";
+import SiteFooter from "@/components/SiteFooter";
 import Frame from "@/components/Frame";
 import Stamp from "@/components/Stamp";
 import { getCurrentParticipant } from "@/lib/auth";
@@ -17,11 +18,11 @@ export default async function CeremonyPage() {
   const idToName = new Map(participants.map((p) => [p.id, p.displayName]));
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 flex flex-col">
       <MastheadBar signedInAs={me?.displayName ?? null} />
 
       {!allocation ? (
-        <section className="bg-ink text-cream flex-1 flex flex-col items-center justify-center py-32 px-6 text-center">
+        <section className="flex-1 bg-ink text-cream flex flex-col items-center justify-center py-32 px-6 text-center">
           <Stamp tone="cream" className="border-cream/60">
             THE CEREMONY OF 2026
           </Stamp>
@@ -34,7 +35,7 @@ export default async function CeremonyPage() {
           </p>
         </section>
       ) : (
-        <main className="max-w-5xl mx-auto px-6 py-10">
+        <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-10">
           <header className="mb-8 text-center">
             <Stamp tone="cobalt">THE LEDGER STANDS</Stamp>
             <h1 className="mt-3 font-display text-5xl">
@@ -99,6 +100,7 @@ export default async function CeremonyPage() {
           </section>
         </main>
       )}
+      <SiteFooter />
     </div>
   );
 }

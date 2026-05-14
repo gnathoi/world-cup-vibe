@@ -24,7 +24,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Goal! The 1966 Sweepstake",
+  title: "Goal! The 2026 Sweepstake",
   description: "A World Cup 2026 sweepstake for friends, played in the spirit of 1966.",
 };
 
@@ -36,9 +36,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${alfa.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${alfa.variable} ${plexSans.variable} ${plexMono.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-screen flex flex-col">{children}</body>
     </html>
   );
 }

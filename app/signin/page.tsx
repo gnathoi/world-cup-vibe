@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentParticipant } from "@/lib/auth";
 import MastheadBar from "@/components/MastheadBar";
+import SiteFooter from "@/components/SiteFooter";
 import Frame from "@/components/Frame";
 import Stamp from "@/components/Stamp";
 import { signInAction } from "./actions";
@@ -10,13 +11,13 @@ export default async function SignInPage() {
   if (me) redirect("/me");
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 flex flex-col">
       <MastheadBar />
-      <main className="max-w-xl mx-auto px-6 py-16">
+      <main className="flex-1 w-full max-w-xl mx-auto px-6 py-16">
         <Frame variant="primary" className="p-8 bg-cream">
           <Stamp tone="cobalt">JOIN THE WIRE</Stamp>
           <h1 className="mt-4 font-display text-4xl text-ink leading-tight">
-            JOIN THE 1966 SWEEPSTAKE
+            JOIN THE 2026 SWEEPSTAKE
           </h1>
           <p className="mt-4 font-mono text-sm text-ink/80">
             Enter an email and a display name. No password. No verification.
@@ -57,6 +58,7 @@ export default async function SignInPage() {
           </form>
         </Frame>
       </main>
+      <SiteFooter />
     </div>
   );
 }

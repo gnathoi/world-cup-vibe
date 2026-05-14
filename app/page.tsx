@@ -9,6 +9,7 @@ import {
 import { getMatches, getCacheAge } from "@/lib/openfootball";
 import { computeStandings, computePotGbp } from "@/lib/leaderboard";
 import MastheadBar from "@/components/MastheadBar";
+import SiteFooter from "@/components/SiteFooter";
 import HeroStrip from "@/components/HeroStrip";
 import Frame from "@/components/Frame";
 import RankedRow from "@/components/RankedRow";
@@ -77,7 +78,7 @@ export default async function HomePage() {
   );
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 flex flex-col">
       <MastheadBar signedInAs={me?.displayName ?? null} />
       <HeroStrip
         matchDayLabel={heroInfo.label}
@@ -88,7 +89,7 @@ export default async function HomePage() {
         stale={stale}
       />
 
-      <main className="max-w-7xl mx-auto px-6 py-10 grid gap-8 lg:grid-cols-[1fr_360px_320px]">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10 grid gap-8 lg:grid-cols-[1fr_360px_320px]">
         {/* THE STANDINGS */}
         <section>
           <h2 className="font-display text-3xl mb-4">THE STANDINGS</h2>
@@ -146,7 +147,7 @@ export default async function HomePage() {
             <Frame variant="primary" className="p-6 bg-cream text-center">
               <Stamp tone="cobalt">FOR FRIENDS</Stamp>
               <h3 className="mt-3 font-display text-2xl leading-tight">
-                JOIN THE 1966 SWEEPSTAKE
+                JOIN THE 2026 SWEEPSTAKE
               </h3>
               <p className="mt-3 font-mono text-sm text-ink/70">
                 Sign up to see the wire and post your own observations.
@@ -193,15 +194,7 @@ export default async function HomePage() {
         </section>
       </main>
 
-      <footer className="bg-ink text-cream/80 mt-12">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between font-mono text-xs tracking-widest">
-          <span>POWERED BY THE OPENFOOTBALL WIRE</span>
-          <span aria-hidden>{"// // // // //"}</span>
-          <a href="/admin" className="hover:text-cream">
-            /ADMIN
-          </a>
-        </div>
-      </footer>
+      <SiteFooter showAdminLink />
     </div>
   );
 }

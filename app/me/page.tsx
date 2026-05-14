@@ -10,6 +10,7 @@ import { getMatches } from "@/lib/openfootball";
 import { computeStandings, computePotGbp } from "@/lib/leaderboard";
 import { TEAMS_2026 } from "@/lib/teams";
 import MastheadBar from "@/components/MastheadBar";
+import SiteFooter from "@/components/SiteFooter";
 import Frame from "@/components/Frame";
 import Stamp from "@/components/Stamp";
 import TeamCard from "@/components/TeamCard";
@@ -100,9 +101,9 @@ export default async function MePage() {
   });
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 flex flex-col">
       <MastheadBar signedInAs={me.displayName} />
-      <main className="max-w-7xl mx-auto px-6 py-10">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10">
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <h1 className="font-display text-4xl">
             {me.displayName.toUpperCase()}&apos;S TEAMS
@@ -206,6 +207,7 @@ export default async function MePage() {
           </section>
         ) : null}
       </main>
+      <SiteFooter />
     </div>
   );
 }
