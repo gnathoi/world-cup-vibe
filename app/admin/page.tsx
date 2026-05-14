@@ -1,82 +1,40 @@
-import { cookies } from "next/headers";
 import {
   getAllocation,
   getParticipants,
   getSpecials,
   getPotPaidBy,
 } from "@/lib/db";
+import { getCacheAge } from "@/lib/openfootball";
 import MastheadBar from "@/components/MastheadBar";
+import SiteFooter from "@/components/SiteFooter";
 import Frame from "@/components/Frame";
 import Stamp from "@/components/Stamp";
-import { reallocateAction, togglePaidAction } from "./actions";
+import {
+  reallocateAction,
+  togglePaidAction,
+  refreshOpenfootballAction,
+} from "./actions";
 
-const ADMIN_COOKIE = "goal-1966-admin";
-
-async function isAdmin(): Promise<boolean> {
-  const store = await cookies();
-  return store.get(ADMIN_COOKIE)?.value === "ok";
-}
-
-async function adminLoginAction(formData: FormData) {
-  "use server";
-  const submitted = String(formData.get("password") ?? "");
-  if (submitted && submitted === process.env.ADMIN_PASSWORD) {
-    const store = await cookies();
-    store.set(ADMIN_COOKIE, "ok", {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 4, // 4 hours
-      secure: process.env.NODE_ENV === "production",
-    });
-  } else {
-    throw new Error("Wrong password.");
-  }
-}
+export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const authed = await isAdmin();
+  const [participants, allocation, specials, paidBy, cacheInfo] =
+    await Promise.all([
+      getParticipants(),
+      getAllocation(),
+      getSpecials(),
+      getPotPaidBy(),
+      getCacheAge(),
+    ]);
 
-  if (!authed) {
-    return (
-      <div className="flex-1">
-        <MastheadBar />
-        <main className="max-w-md mx-auto px-6 py-16">
-          <Frame variant="primary" className="p-6 bg-cream">
-            <Stamp tone="scarlet">ADMIN</Stamp>
-            <h1 className="mt-3 font-display text-3xl">THE BOOKMAKER&apos;S OFFICE</h1>
-            <form action={adminLoginAction} className="mt-5 flex flex-col gap-3">
-              <input
-                name="password"
-                type="password"
-                placeholder="PASSWORD"
-                className="w-full px-3 py-2 bg-cream border border-ink font-mono"
-                required
-              />
-              <button
-                type="submit"
-                className="px-4 py-3 bg-scarlet text-cream font-display tracking-widest"
-              >
-                ENTER
-              </button>
-            </form>
-          </Frame>
-        </main>
-      </div>
-    );
-  }
-
-  const [participants, allocation, specials, paidBy] = await Promise.all([
-    getParticipants(),
-    getAllocation(),
-    getSpecials(),
-    getPotPaidBy(),
-  ]);
+  const cacheAgeLabel = cacheInfo.fetchedAt
+    ? `Last refresh: ${new Date(cacheInfo.fetchedAt).toLocaleString()}`
+    : "Never refreshed — no openfootball data cached yet.";
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 flex flex-col">
       <MastheadBar signedInAs="ADMIN" />
-      <main className="max-w-5xl mx-auto px-6 py-10 grid gap-6">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-10 grid gap-6">
         <Frame variant="primary" className="p-6 bg-cream">
           <Stamp tone="scarlet">THE DRAW</Stamp>
           <h2 className="font-display text-2xl mt-3">ALLOCATION OVERRIDE</h2>
@@ -102,6 +60,20 @@ export default async function AdminPage() {
               className="px-4 py-3 bg-scarlet text-cream font-display tracking-widest"
             >
               RE-ROLL THE DRAW
+            </button>
+          </form>
+        </Frame>
+
+        <Frame variant="primary" className="p-6 bg-cream">
+          <Stamp tone="cobalt">THE WIRE</Stamp>
+          <h2 className="font-display text-2xl mt-3">REFRESH OPENFOOTBALL</h2>
+          <p className="font-mono text-sm text-ink/70 mt-2">{cacheAgeLabel}</p>
+          <form action={refreshOpenfootballAction} className="mt-5">
+            <button
+              type="submit"
+              className="px-4 py-3 bg-cobalt text-cream font-display tracking-widest"
+            >
+              REFRESH FROM OPENFOOTBALL
             </button>
           </form>
         </Frame>
@@ -142,7 +114,7 @@ export default async function AdminPage() {
           <ul className="mt-4">
             {specials.length === 0 ? (
               <li className="font-mono text-sm italic text-ink/60">
-                No specials curated yet.
+                No specials curated yet. Run RE-ROLL THE DRAW to seed them.
               </li>
             ) : (
               specials.map((s) => (
@@ -162,7 +134,7 @@ export default async function AdminPage() {
           </ul>
         </Frame>
       </main>
+      <SiteFooter />
     </div>
   );
 }
-
