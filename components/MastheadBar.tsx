@@ -30,7 +30,6 @@ export default function MastheadBar({ signedInAs }: Props) {
         <div className="text-right shrink-0">
           {signedInAs ? (
             <span className="stamp text-cream border-cream/60 text-xs">
-              <span className="hidden sm:inline">SIGNED IN — </span>
               {signedInAs}
             </span>
           ) : (
