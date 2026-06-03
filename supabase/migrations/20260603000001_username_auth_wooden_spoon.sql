@@ -14,12 +14,12 @@ alter table public.participants
 -- 2. Drop the old full unique index; replace with partial (WHERE email IS NOT NULL)
 drop index if exists participants_email_lower_idx;
 
-create unique index participants_email_lower_idx
+create unique index if not exists participants_email_lower_idx
   on public.participants ((lower(email)))
   where email is not null;
 
 -- 3. Unique usernames (display_name), case-insensitive
-create unique index participants_display_name_unique_idx
+create unique index if not exists participants_display_name_unique_idx
   on public.participants ((lower(display_name)));
 
 -- 4. Seed admin participant
