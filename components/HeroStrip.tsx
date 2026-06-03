@@ -35,7 +35,7 @@ export default function HeroStrip({
         </div>
         <div className="flex items-center gap-4">
           {stale ? <Stamp tone="scarlet">DATA MAY BE STALE</Stamp> : null}
-          <div className="frame-double bg-cream/80 px-8 py-4 text-center min-w-[7rem]">
+          <div className="frame-pot bg-cream/80 px-8 py-4 text-center min-w-[7rem]">
             <p className="font-mono text-xs tracking-widest text-ink/70">
               POT
             </p>

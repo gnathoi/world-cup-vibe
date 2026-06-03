@@ -180,7 +180,7 @@ export default async function HomePage() {
               <Frame variant="primary" className="p-5 bg-cream text-center">
                 <Stamp tone="cobalt">FOR FRIENDS</Stamp>
                 <h3 className="mt-3 font-display text-xl leading-tight">
-                  JOIN THE 2026 SWEEPSTAKE
+                  MAKE AMERICA GOAL AGAIN
                 </h3>
                 <a
                   href="/signin"

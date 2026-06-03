@@ -68,17 +68,46 @@ export async function GET(req: Request) {
   );
 
   if (newClaims.length > 0) {
+    // Build a team → participantId lookup so we can attribute claims to the
+    // owner of the relevant team rather than a pre-assigned random holder.
+    const allocation = await getAllocation();
+    const teamOwner = new Map<string, string>();
+    if (allocation) {
+      for (const a of allocation.byParticipant) {
+        for (const code of a.teamCodes) teamOwner.set(code, a.participantId);
+      }
+    }
+    const matchById = new Map(fetchResult.matches.map((m) => [m.id, m]));
+
     const map = new Map(specials.map((s) => [s.id, s] as const));
     for (const c of newClaims) {
       const s = map.get(c.specialId);
-      if (s) {
-        map.set(c.specialId, {
-          ...s,
-          status: "claimed",
-          claimedAt: c.claimedAt,
-          claimedMatchId: c.matchId,
-        });
+      const match = matchById.get(c.matchId);
+      if (!s || !match) continue;
+
+      // Determine which participant's team triggered this event.
+      let ownerParticipantId: string | null = s.ownerParticipantId ?? null;
+      if (!ownerParticipantId) {
+        if (s.condition.type === "min_score_margin" && match.score) {
+          // Award to the owner of the winning team.
+          const winnerCode =
+            match.score.home > match.score.away
+              ? match.home.code
+              : match.away.code;
+          ownerParticipantId = teamOwner.get(winnerCode) ?? null;
+        } else if (s.condition.type === "score_at_full_time") {
+          // 0-0: award to the home team's owner (consistent tiebreak).
+          ownerParticipantId = teamOwner.get(match.home.code) ?? null;
+        }
       }
+
+      map.set(c.specialId, {
+        ...s,
+        ownerParticipantId,
+        status: "claimed",
+        claimedAt: c.claimedAt,
+        claimedMatchId: c.matchId,
+      });
     }
     await setSpecials(Array.from(map.values()));
   }

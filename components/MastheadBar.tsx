@@ -19,7 +19,7 @@ export default function MastheadBar({ signedInAs }: Props) {
             href="/"
             className="font-display text-xl sm:text-3xl lg:text-4xl tracking-tight text-center leading-tight"
           >
-            GOAL! THE 2026 SWEEPSTAKE
+            MAKE AMERICA GOAL AGAIN
           </Link>
           <nav className="flex gap-3 sm:gap-4 font-mono text-xs tracking-widest text-cream/70">
             <Link href="/" className="hover:text-cream">STANDINGS</Link>

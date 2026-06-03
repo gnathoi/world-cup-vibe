@@ -8,12 +8,6 @@ export const DEFAULT_SPECIALS: Omit<Special, "ownerParticipantId" | "status">[] 
     condition: { type: "wooden_spoon", params: {} },
   },
   {
-    id: "hat-trick",
-    label: "Any player scores a hat-trick",
-    payoutGbp: 10,
-    condition: { type: "player_hat_trick", params: {} },
-  },
-  {
     id: "big-win",
     label: "Any team wins by 4 or more goals",
     payoutGbp: 10,

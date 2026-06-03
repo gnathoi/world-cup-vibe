@@ -1,6 +1,3 @@
-// Shared allocation logic used by both the admin action and the auto-allocation
-// cron. Keeps the draw reproducible and the two call-sites in sync.
-
 import { randomUUID } from "node:crypto";
 import {
   setAllocation,
@@ -8,7 +5,7 @@ import {
   getSpecials,
   setSpecials,
 } from "./db";
-import { allocate, assignByRandom } from "./allocator";
+import { allocate } from "./allocator";
 import { TEAMS_2026, HOST_NATIONS } from "./teams";
 import { DEFAULT_SPECIALS, specialReferencesTeam } from "./specials/defaults";
 import type { Special } from "./types";
@@ -46,33 +43,21 @@ export async function performDraw(seed?: string): Promise<void> {
     }));
   }
 
+  // Team-linked specials (e.g. team_advances_to_round) get assigned to the
+  // owner of that specific team. All others remain ownerless until the event
+  // happens — whoever's team triggers it wins the bet at that point.
   const teamOwner = new Map<string, string>();
   for (const [pid, codes] of Object.entries(byParticipantId)) {
     for (const code of codes) teamOwner.set(code, pid);
   }
 
-  const specialsWithOwners: Special[] = [];
-  const orphanSpecials: Special[] = [];
-  for (const s of specials) {
+  const seeded: Special[] = specials.map((s) => {
     const teamRef = specialReferencesTeam(s);
     if (teamRef && teamOwner.has(teamRef)) {
-      specialsWithOwners.push({
-        ...s,
-        ownerParticipantId: teamOwner.get(teamRef)!,
-      });
-    } else {
-      orphanSpecials.push(s);
+      return { ...s, ownerParticipantId: teamOwner.get(teamRef)! };
     }
-  }
+    return { ...s, ownerParticipantId: null };
+  });
 
-  const random = assignByRandom(
-    orphanSpecials,
-    participants,
-    drawSeed + ":specials",
-  );
-  for (const { item, participantId } of random) {
-    specialsWithOwners.push({ ...item, ownerParticipantId: participantId });
-  }
-
-  await setSpecials(specialsWithOwners);
+  await setSpecials(seeded);
 }

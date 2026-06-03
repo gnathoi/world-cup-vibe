@@ -59,6 +59,23 @@ body {
   z-index: 1;
 }
 
+.frame-pot {
+  position: relative;
+  border: 3px solid var(--color-scarlet);
+  padding: 5px;
+}
+.frame-pot::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 2px solid var(--color-ink);
+  pointer-events: none;
+}
+.frame-pot > * {
+  position: relative;
+  z-index: 1;
+}
+
 .frame-secondary {
   border-color: var(--color-sepia-dark);
 }

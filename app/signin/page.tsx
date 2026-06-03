@@ -17,7 +17,7 @@ export default async function SignInPage() {
         <Frame variant="primary" className="p-8 bg-cream">
           <Stamp tone="cobalt">JOIN THE WIRE</Stamp>
           <h1 className="mt-4 font-display text-4xl text-ink leading-tight">
-            JOIN THE 2026 SWEEPSTAKE
+            MAKE AMERICA GOAL AGAIN
           </h1>
           <p className="mt-4 font-mono text-sm text-ink/80">
             Pick a username. No password. No fuss.
