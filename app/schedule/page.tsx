@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getMatches } from "@/lib/openfootball";
 import { getCurrentParticipant } from "@/lib/auth";
 import { flag } from "@/lib/flags";
@@ -105,10 +106,10 @@ function MatchRow({ m }: { m: Match }) {
 }
 
 export default async function SchedulePage() {
-  const [me, matches] = await Promise.all([
-    getCurrentParticipant(),
-    getMatches(),
-  ]);
+  const me = await getCurrentParticipant();
+  if (!me) redirect("/signin");
+
+  const matches = await getMatches();
 
   const now = new Date().toISOString();
   const upcoming = matches.filter((m) => !m.score && m.kickoffUtc >= now);

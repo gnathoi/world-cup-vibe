@@ -1,38 +1,37 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { randomUUID } from "node:crypto";
-import {
-  addParticipant,
-  getParticipantByUsername,
-  getAllocation,
-} from "@/lib/db";
+import { getParticipantByUsername } from "@/lib/db";
 import { setSession } from "@/lib/auth";
-import type { Participant } from "@/lib/types";
-
-const USERNAME_RE = /^[a-zA-Z0-9_]{2,30}$/;
+import { verifyPassword } from "@/lib/password";
 
 export async function signInAction(formData: FormData) {
-  const raw = String(formData.get("username") ?? "").trim();
+  const username = String(formData.get("username") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
 
-  if (!USERNAME_RE.test(raw)) {
-    throw new Error(
-      "Username must be 2–30 characters: letters, numbers, underscores only.",
-    );
+  if (!username || !password) {
+    redirect("/signin?error=1");
   }
 
-  let participant = await getParticipantByUsername(raw);
+  const participant = await getParticipantByUsername(username);
   if (!participant) {
-    const allocation = await getAllocation();
-    const spectator = !!allocation;
-    participant = {
-      id: randomUUID(),
-      displayName: raw,
-      signedUpAt: new Date().toISOString(),
-      spectator,
-      paidIn: false,
-    } satisfies Participant;
-    await addParticipant(participant);
+    redirect("/signin?error=1");
+  }
+
+  // gnathoi authenticates against the ADMIN_PIN env var — no stored hash.
+  if (username.toLowerCase() === "gnathoi") {
+    const pin = process.env.ADMIN_PIN ?? "";
+    if (!pin || password !== pin) {
+      redirect("/signin?error=1");
+    }
+  } else {
+    if (!participant.passwordHash) {
+      redirect("/signin?error=1");
+    }
+    const valid = await verifyPassword(password, participant.passwordHash);
+    if (!valid) {
+      redirect("/signin?error=1");
+    }
   }
 
   await setSession(participant);

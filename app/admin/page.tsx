@@ -15,6 +15,7 @@ import {
   togglePaidAction,
   refreshOpenfootballAction,
   verifyAdminPinAction,
+  addParticipantAction,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +83,56 @@ export default async function AdminPage() {
     <div className="flex-1 flex flex-col">
       <MastheadBar signedInAs="ADMIN" />
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-10 grid gap-6">
+        <Frame variant="primary" className="p-6 bg-cream">
+          <Stamp tone="cobalt">THE PLAYERS</Stamp>
+          <h2 className="font-display text-2xl mt-3">ADD PARTICIPANT</h2>
+          <p className="font-mono text-sm text-ink/70 mt-2">
+            Creates a new account. Share the username and password directly.
+          </p>
+          <form action={addParticipantAction} className="mt-5 flex flex-col sm:flex-row gap-3 sm:items-end">
+            <label className="block flex-1">
+              <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
+                USERNAME
+              </span>
+              <input
+                name="username"
+                type="text"
+                required
+                placeholder="e.g. NAT"
+                className="w-full px-3 py-2 bg-cream border border-ink font-mono"
+              />
+            </label>
+            <label className="block flex-1">
+              <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
+                PASSWORD
+              </span>
+              <input
+                name="password"
+                type="text"
+                required
+                placeholder="something memorable"
+                className="w-full px-3 py-2 bg-cream border border-ink font-mono"
+              />
+            </label>
+            <button
+              type="submit"
+              className="px-4 py-3 bg-cobalt text-cream font-display tracking-widest"
+            >
+              ADD
+            </button>
+          </form>
+          <ul className="mt-5 divide-y divide-ink/10">
+            {participants.map((p) => (
+              <li key={p.id} className="py-2 flex items-center justify-between font-mono text-sm">
+                <span>{p.displayName}</span>
+                <span className="text-ink/40 text-xs">
+                  {p.spectator ? "SPECTATOR" : "PLAYER"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Frame>
+
         <Frame variant="primary" className="p-6 bg-cream">
           <Stamp tone="scarlet">THE DRAW</Stamp>
           <h2 className="font-display text-2xl mt-3">ALLOCATION OVERRIDE</h2>

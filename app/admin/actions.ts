@@ -9,8 +9,13 @@ import {
   setSpecials,
   getSpecialCursor,
   setSpecialCursor,
+  addParticipant,
+  getParticipantByUsername,
+  getAllocation,
 } from "@/lib/db";
 import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
+import { hashPassword } from "@/lib/password";
+import { randomUUID } from "node:crypto";
 import { performDraw } from "@/lib/draw";
 import { refreshFromOpenfootball } from "@/lib/openfootball";
 import { evaluate } from "@/lib/specials/evaluate";
@@ -26,6 +31,33 @@ export async function verifyAdminPinAction(formData: FormData) {
   session.adminVerified = true;
   await session.save();
   redirect("/admin");
+}
+
+export async function addParticipantAction(formData: FormData) {
+  const username = String(formData.get("username") ?? "").trim();
+  const password = String(formData.get("password") ?? "").trim();
+
+  if (!username || !password) throw new Error("Username and password required.");
+  if (!/^[a-zA-Z0-9_]{2,30}$/.test(username)) {
+    throw new Error("Username must be 2–30 characters: letters, numbers, underscores.");
+  }
+
+  const existing = await getParticipantByUsername(username);
+  if (existing) throw new Error(`Username "${username}" is already taken.`);
+
+  const allocation = await getAllocation();
+  const passwordHash = await hashPassword(password);
+
+  await addParticipant({
+    id: randomUUID(),
+    displayName: username,
+    signedUpAt: new Date().toISOString(),
+    spectator: !!allocation,
+    paidIn: false,
+    passwordHash,
+  });
+
+  revalidatePath("/admin");
 }
 
 export async function reallocateAction(formData: FormData) {

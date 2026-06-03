@@ -26,6 +26,7 @@ type ParticipantRow = {
   signed_up_at: string;
   spectator: boolean;
   paid_in: boolean;
+  password_hash: string | null;
 };
 
 function toParticipant(r: ParticipantRow): Participant {
@@ -36,6 +37,7 @@ function toParticipant(r: ParticipantRow): Participant {
     signedUpAt: r.signed_up_at,
     spectator: r.spectator,
     paidIn: r.paid_in,
+    ...(r.password_hash ? { passwordHash: r.password_hash } : {}),
   };
 }
 
@@ -180,6 +182,7 @@ export async function addParticipant(p: Participant): Promise<void> {
     signed_up_at: p.signedUpAt,
     spectator: p.spectator,
     paid_in: p.paidIn,
+    password_hash: p.passwordHash ?? null,
   });
   if (error) throw error;
 }

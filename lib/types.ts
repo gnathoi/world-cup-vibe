@@ -6,11 +6,12 @@ export type ActionResult<T = void> =
 
 export type Participant = {
   id: string;
-  email?: string; // optional — username-only sign-up does not require it
+  email?: string;
   displayName: string;
   signedUpAt: string; // ISO 8601
-  spectator: boolean; // true if signed up after allocation lock
+  spectator: boolean;
   paidIn: boolean;
+  passwordHash?: string; // null for gnathoi (uses ADMIN_PIN), set for all others
 };
 
 export type Allocation = {

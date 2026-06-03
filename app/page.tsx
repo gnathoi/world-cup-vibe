@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getCurrentParticipant } from "@/lib/auth";
 import {
   getParticipants,
@@ -61,9 +62,12 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
 }
 
 export default async function HomePage() {
-  const [me, participants, allocation, specials, matches, woodenSpoonWinnerId] =
+  const me = await getCurrentParticipant();
+  if (!me) redirect("/signin");
+
+  const [, participants, allocation, specials, matches, woodenSpoonWinnerId] =
     await Promise.all([
-      getCurrentParticipant(),
+      Promise.resolve(me),
       getParticipants(),
       getAllocation(),
       getSpecials(),
