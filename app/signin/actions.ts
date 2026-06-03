@@ -18,8 +18,8 @@ export async function signInAction(formData: FormData) {
     redirect("/signin?error=1");
   }
 
-  // gnathoi authenticates against the ADMIN_PIN env var — no stored hash.
-  if (username.toLowerCase() === "gnathoi") {
+  // nat authenticates against the ADMIN_PIN env var — no stored hash.
+  if (username.toLowerCase() === "nat") {
     const pin = process.env.ADMIN_PIN ?? "";
     if (!pin || password !== pin) {
       redirect("/signin?error=1");
