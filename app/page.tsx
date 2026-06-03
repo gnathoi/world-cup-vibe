@@ -5,7 +5,7 @@ import {
   getSpecials,
   getWoodenSpoonWinner,
 } from "@/lib/db";
-import { getMatches, getCacheAge } from "@/lib/openfootball";
+import { getMatches } from "@/lib/openfootball";
 import { computeStandings, computePotGbp } from "@/lib/leaderboard";
 import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
 import MastheadBar from "@/components/MastheadBar";
@@ -61,14 +61,13 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
 }
 
 export default async function HomePage() {
-  const [me, participants, allocation, specials, matches, cacheInfo, woodenSpoonWinnerId] =
+  const [me, participants, allocation, specials, matches, woodenSpoonWinnerId] =
     await Promise.all([
       getCurrentParticipant(),
       getParticipants(),
       getAllocation(),
       getSpecials(),
       getMatches(),
-      getCacheAge(),
       getWoodenSpoonWinner(),
     ]);
 
@@ -86,10 +85,7 @@ export default async function HomePage() {
           status: "pending" as const,
         }));
   const heroInfo = formatMatchDayLabel(matches);
-  const stale =
-    cacheInfo.fetchedAt !== null &&
-    cacheInfo.ageMs !== null &&
-    cacheInfo.ageMs > 1000 * 60 * 30;
+  const stale = false; // stale notice lives on /admin, not the homepage
 
   const ownerNames = new Map(
     participants.map((p) => [p.id, p.displayName] as const),
