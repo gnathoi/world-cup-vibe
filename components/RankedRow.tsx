@@ -59,12 +59,10 @@ export default function RankedRow({
         ) : null}
       </ul>
       <span className="justify-self-end">
-        {status === "still-in" ? (
+        {teamCodes.length === 0 ? null : status === "still-in" ? (
           <Stamp tone="cobalt">STILL IN</Stamp>
         ) : (
-          <Stamp tone="scarlet" className="line-through decoration-2">
-            ELIMINATED
-          </Stamp>
+          <Stamp tone="scarlet">ELIMINATED</Stamp>
         )}
       </span>
     </li>

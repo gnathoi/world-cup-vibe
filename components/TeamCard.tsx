@@ -42,11 +42,7 @@ export default function TeamCard({
       <p>
         {status === "still-in" ? (
           <Stamp tone="cobalt">STILL IN</Stamp>
-        ) : (
-          <Stamp tone="scarlet" className="line-through decoration-2">
-            ELIMINATED
-          </Stamp>
-        )}
+        ) : null}
       </p>
       {nextOpponentCode ? (
         <p className="font-mono text-xs text-ink/70 mt-auto">
