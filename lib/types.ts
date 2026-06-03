@@ -50,7 +50,9 @@ export type SpecialConditionType =
   | "goal_within_minute"
   | "team_advances_to_round"
   | "match_outcome"
-  | "card_in_match";
+  | "card_in_match"
+  | "min_score_margin"
+  | "wooden_spoon";
 
 export type Special = {
   id: string;

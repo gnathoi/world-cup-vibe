@@ -82,6 +82,10 @@ function matchSatisfies(match: Match, special: Special): boolean {
       return evaluateMatchOutcome(match, special.condition.params);
     case "card_in_match":
       return evaluateCardInMatch(match, special.condition.params);
+    case "min_score_margin":
+      return evaluateMinScoreMargin(match, special.condition.params);
+    case "wooden_spoon":
+      return false; // handled separately in the cron route
     default:
       return false;
   }
@@ -146,6 +150,18 @@ export function evaluateMatchOutcome(
   if (outcome === "draw") return match.score.home === match.score.away;
   if (outcome === "shootout") return match.status === "pen";
   return false;
+}
+
+export function evaluateMinScoreMargin(
+  match: Match,
+  params: Record<string, string | number | boolean>,
+): boolean {
+  if (!match.score) return false;
+  const minMargin = Number(params.minMargin);
+  const margin = Math.abs(match.score.home - match.score.away);
+  const round = (params.round as string | undefined) ?? "any";
+  if (round !== "any" && round !== match.round) return false;
+  return margin >= minMargin;
 }
 
 export function evaluateCardInMatch(

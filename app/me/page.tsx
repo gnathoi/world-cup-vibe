@@ -4,7 +4,6 @@ import {
   getAllocation,
   getParticipants,
   getSpecials,
-  getPotPaidBy,
   getWoodenSpoonWinner,
 } from "@/lib/db";
 import { getMatches } from "@/lib/openfootball";
@@ -41,12 +40,11 @@ export default async function MePage() {
   const me = await getCurrentParticipant();
   if (!me) redirect("/signin");
 
-  const [participants, allocation, specials, paidBy, matches, woodenSpoonWinnerId] =
+  const [participants, allocation, specials, matches, woodenSpoonWinnerId] =
     await Promise.all([
       getParticipants(),
       getAllocation(),
       getSpecials(),
-      getPotPaidBy(),
       getMatches(),
       getWoodenSpoonWinner(),
     ]);
@@ -54,7 +52,7 @@ export default async function MePage() {
   const standings = computeStandings(participants, allocation, matches);
   const myRow = standings.find((r) => r.participantId === me.id);
   const myRank = standings.findIndex((r) => r.participantId === me.id) + 1;
-  const potGbp = computePotGbp(paidBy.length);
+  const potGbp = computePotGbp(participants.length);
   const countdown = countdownToNext(matches);
   const mySpecials = specials.filter((s) => s.ownerParticipantId === me.id);
 

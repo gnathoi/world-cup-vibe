@@ -1,63 +1,35 @@
-// Default curated Bookies' Specials. Admin-editable until allocation lock.
-// owner_participant_id remains null until the allocator runs.
-
 import type { Special } from "../types";
 
 export const DEFAULT_SPECIALS: Omit<Special, "ownerParticipantId" | "status">[] = [
   {
-    id: "zero-zero-final",
-    label: "0-0 in the Final",
-    payoutGbp: 50,
-    condition: {
-      type: "score_at_full_time",
-      params: { round: "final", home: 0, away: 0 },
-    },
+    id: "wooden-spoon",
+    label: "Wooden spoon — first person with all teams out",
+    payoutGbp: 20,
+    condition: { type: "wooden_spoon", params: {} },
   },
   {
     id: "hat-trick",
     label: "Any player scores a hat-trick",
-    payoutGbp: 25,
+    payoutGbp: 30,
     condition: { type: "player_hat_trick", params: {} },
   },
   {
-    id: "usa-semi",
-    label: "USA reaches the semi-final",
-    payoutGbp: 75,
-    condition: {
-      type: "team_advances_to_round",
-      params: { team: "USA", round: "semi" },
-    },
+    id: "big-win",
+    label: "Any team wins by 4 or more goals",
+    payoutGbp: 35,
+    condition: { type: "min_score_margin", params: { minMargin: 4 } },
   },
   {
-    id: "penalty-shootout-final",
-    label: "Penalty shoot-out in the Final",
+    id: "nil-nil",
+    label: "Any match ends 0-0",
     payoutGbp: 15,
     condition: {
-      type: "match_outcome",
-      params: { round: "final", outcome: "shootout" },
-    },
-  },
-  {
-    id: "early-final-goal",
-    label: "Goal within the first 60 seconds of the Final",
-    payoutGbp: 20,
-    condition: {
-      type: "goal_within_minute",
-      params: { round: "final", maxMinute: 1 },
-    },
-  },
-  {
-    id: "red-card-final",
-    label: "Red card in the Final",
-    payoutGbp: 15,
-    condition: {
-      type: "card_in_match",
-      params: { round: "final", cardType: "red" },
+      type: "score_at_full_time",
+      params: { round: "any", home: 0, away: 0 },
     },
   },
 ];
 
-// Conditions that reference a specific team (owner = that team's holder)
 export function specialReferencesTeam(s: Special): string | null {
   if (s.condition.type === "team_advances_to_round") {
     return String(s.condition.params.team).toUpperCase();

@@ -35,11 +35,11 @@ export default function HeroStrip({
         </div>
         <div className="flex items-center gap-4">
           {stale ? <Stamp tone="scarlet">DATA MAY BE STALE</Stamp> : null}
-          <div className="frame-double bg-cream/80 px-6 py-3 text-center">
+          <div className="frame-double bg-cream/80 px-8 py-4 text-center min-w-[7rem]">
             <p className="font-mono text-xs tracking-widest text-ink/70">
               POT
             </p>
-            <p className="font-display text-3xl text-scarlet leading-none mt-1">
+            <p className="font-display text-3xl text-scarlet leading-none mt-2">
               £{potGbp.toLocaleString("en-GB")}
             </p>
           </div>

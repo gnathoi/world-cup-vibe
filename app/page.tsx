@@ -3,7 +3,6 @@ import {
   getParticipants,
   getAllocation,
   getSpecials,
-  getPotPaidBy,
   getWoodenSpoonWinner,
 } from "@/lib/db";
 import { getMatches, getCacheAge } from "@/lib/openfootball";
@@ -61,20 +60,19 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
 }
 
 export default async function HomePage() {
-  const [me, participants, allocation, specials, paidBy, matches, cacheInfo, woodenSpoonWinnerId] =
+  const [me, participants, allocation, specials, matches, cacheInfo, woodenSpoonWinnerId] =
     await Promise.all([
       getCurrentParticipant(),
       getParticipants(),
       getAllocation(),
       getSpecials(),
-      getPotPaidBy(),
       getMatches(),
       getCacheAge(),
       getWoodenSpoonWinner(),
     ]);
 
   const standings = computeStandings(participants, allocation, matches);
-  const potGbp = computePotGbp(paidBy.length);
+  const potGbp = computePotGbp(participants.length);
   const heroInfo = formatMatchDayLabel(matches);
   const stale =
     cacheInfo.fetchedAt !== null &&

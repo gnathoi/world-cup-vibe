@@ -115,8 +115,11 @@ export async function GET(req: Request) {
   if (knockoutStarted) {
     const existingWinner = await getWoodenSpoonWinner();
     if (!existingWinner) {
-      const participants = await getParticipants();
-      const allocation = await getAllocation();
+      const [participants, allocation, currentSpecials] = await Promise.all([
+        getParticipants(),
+        getAllocation(),
+        getSpecials(),
+      ]);
       const standings = computeStandings(
         participants,
         allocation,
@@ -124,12 +127,29 @@ export async function GET(req: Request) {
       );
       const eliminated = standings.filter((r) => !r.stillIn && r.teamCodes.length > 0);
       if (eliminated.length > 0) {
-        // Pick the participant with the fewest points; break ties alphabetically.
         eliminated.sort((a, b) => {
           if (a.points !== b.points) return a.points - b.points;
           return a.displayName.localeCompare(b.displayName);
         });
-        await setWoodenSpoonWinner(eliminated[0].participantId);
+        const winner = eliminated[0];
+        await setWoodenSpoonWinner(winner.participantId);
+        // Also claim the wooden_spoon special in the specials table.
+        const woodenSpoonSpecial = currentSpecials.find(
+          (s) => s.condition.type === "wooden_spoon",
+        );
+        if (woodenSpoonSpecial && woodenSpoonSpecial.status === "pending") {
+          const updatedSpecials = currentSpecials.map((s) =>
+            s.id === woodenSpoonSpecial.id
+              ? {
+                  ...s,
+                  ownerParticipantId: winner.participantId,
+                  status: "claimed" as const,
+                  claimedAt: new Date().toISOString(),
+                }
+              : s,
+          );
+          await setSpecials(updatedSpecials);
+        }
         woodenSpoonAwarded = true;
       }
     }
