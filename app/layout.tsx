@@ -1,32 +1,9 @@
 import type { Metadata } from "next";
-import { Alfa_Slab_One, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-
-const alfa = Alfa_Slab_One({
-  weight: "400",
-  variable: "--font-alfa-slab-one",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const plexSans = IBM_Plex_Sans({
-  weight: ["400", "500", "600"],
-  variable: "--font-plex-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const plexMono = IBM_Plex_Mono({
-  weight: ["400", "500"],
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Make America Goal Again",
   description: "A World Cup 2026 sweepstake for friends, played in the spirit of 1966.",
-  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
@@ -35,10 +12,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${alfa.variable} ${plexSans.variable} ${plexMono.variable} antialiased`}
-    >
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=VT323&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-screen flex flex-col">{children}</body>
     </html>
   );

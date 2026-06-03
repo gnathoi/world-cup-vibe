@@ -1,8 +1,6 @@
-import Stamp from "./Stamp";
-
 type Props = {
-  matchDayLabel: string; // e.g. "MATCH DAY 4 / 17 JUN 2026"
-  stage: string; // e.g. "GROUP STAGE"
+  matchDayLabel: string;
+  stage: string;
   matchesPlayed: number;
   matchesRemaining: number;
   potGbp: number;
@@ -18,31 +16,49 @@ export default function HeroStrip({
   stale,
 }: Props) {
   return (
-    <section className="relative overflow-hidden bg-cream border-y border-ink/10">
-      <div
-        aria-hidden
-        className="halftone absolute inset-0 -z-0"
-      />
-      <div className="relative max-w-7xl mx-auto px-6 py-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <Stamp tone="cobalt" className="-rotate-2 origin-left">
-            {matchDayLabel}
-          </Stamp>
-          <p className="font-display text-2xl sm:text-3xl text-ink">{stage}</p>
-          <p className="font-mono text-sm text-ink/70">
-            {matchesPlayed} played, {matchesRemaining} to go
-          </p>
+    <section
+      style={{
+        background: "#000000",
+        borderBottom: "2px solid #FF00FF",
+        padding: "10px 12px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        flexWrap: "wrap",
+        gap: "10px",
+      }}
+    >
+      <div>
+        <div style={{ color: "#00FFFF", fontSize: "0.9em", marginBottom: "4px" }}>
+          {matchDayLabel}
         </div>
-        <div className="flex items-center gap-4">
-          {stale ? <Stamp tone="scarlet">DATA MAY BE STALE</Stamp> : null}
-          <div className="frame-pot bg-cream/80 px-8 py-4 text-center min-w-[7rem]">
-            <p className="font-mono text-xs tracking-widest text-ink/70">
-              POT
-            </p>
-            <p className="font-display text-3xl text-scarlet leading-none mt-2">
-              £{potGbp.toLocaleString("en-GB")}
-            </p>
+        <div style={{ color: "#00FF00", fontSize: "1.6em", lineHeight: 1.1 }}>
+          {stage}
+        </div>
+        <div style={{ color: "#ffffff", fontSize: "0.85em", marginTop: "4px", opacity: 0.7 }}>
+          {matchesPlayed} PLAYED · {matchesRemaining} REMAINING
+        </div>
+        {stale && (
+          <div
+            className="tt-badge tt-badge-red"
+            style={{ marginTop: "6px", fontSize: "0.8em" }}
+          >
+            DATA MAY BE STALE
           </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          border: "2px solid #FFFF00",
+          padding: "8px 20px",
+          textAlign: "center",
+          minWidth: "110px",
+        }}
+      >
+        <div style={{ color: "#FFFF00", fontSize: "0.8em", letterSpacing: "3px" }}>POT</div>
+        <div style={{ color: "#ffffff", fontSize: "2em", lineHeight: 1 }}>
+          £{potGbp.toLocaleString("en-GB")}
         </div>
       </div>
     </section>

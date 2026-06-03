@@ -1,13 +1,5 @@
 import type { ReactNode } from "react";
 
-// Double-rule frame wrapper. Three variants per the design doc:
-//   primary     — scarlet outer + ink inner (default card style)
-//   secondary   — dark sepia outer + ink inner (less prominent rows)
-//   chalkboard  — single ink rule on ink background (Bookies' Specials)
-//
-// Never embedded inside row components. Always wraps:
-//   <Frame variant="primary"><RankedRow .../></Frame>
-
 type Variant = "primary" | "secondary" | "chalkboard";
 
 type Props = {
@@ -16,10 +8,10 @@ type Props = {
   children: ReactNode;
 };
 
-const variantClass: Record<Variant, string> = {
-  primary: "frame-double",
-  secondary: "frame-double frame-secondary",
-  chalkboard: "frame-chalkboard",
+const variantStyle: Record<Variant, React.CSSProperties> = {
+  primary:    { border: "2px solid #00FFFF" },
+  secondary:  { border: "1px solid #ffffff" },
+  chalkboard: { border: "1px solid #ffffff", background: "#000000", color: "#ffffff" },
 };
 
 export default function Frame({
@@ -28,6 +20,8 @@ export default function Frame({
   children,
 }: Props) {
   return (
-    <div className={`${variantClass[variant]} ${className}`}>{children}</div>
+    <div className={className} style={variantStyle[variant]}>
+      {children}
+    </div>
   );
 }

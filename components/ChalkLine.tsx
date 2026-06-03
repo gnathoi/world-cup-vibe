@@ -1,6 +1,3 @@
-// One row of the Bookies' Specials chalkboard. Lives inside a chalkboard-variant
-// <Frame> so the surrounding panel is dark.
-
 type Props = {
   payoutGbp: number;
   label: string;
@@ -14,28 +11,36 @@ export default function ChalkLine({
   status,
   claimedByDisplayName,
 }: Props) {
-  const statusNode =
-    status === "pending" ? (
-      <span className="stamp text-cobalt border-cobalt">PENDING</span>
-    ) : status === "claimed" ? (
-      <span className="stamp text-sepia border-sepia">
-        CLAIMED{claimedByDisplayName ? ` — ${claimedByDisplayName}` : ""}
-      </span>
-    ) : (
-      <span className="stamp text-cream/60 border-cream/40 line-through">
-        EXPIRED
-      </span>
-    );
-
   return (
-    <li className="grid grid-cols-[4rem_1fr_auto] items-center gap-4 py-3 border-b border-cream/15 last:border-b-0">
-      <span className="font-display text-xl text-sepia tabular-nums">
+    <li
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr auto auto",
+        gap: "8px",
+        alignItems: "baseline",
+        padding: "5px 0",
+        borderBottom: "1px dotted #333333",
+      }}
+    >
+      <span style={{ color: "#00FFFF", fontSize: "0.95em" }}>{label}</span>
+
+      <span style={{ color: "#00FF00", minWidth: "3.5em", textAlign: "right" }}>
         £{payoutGbp}
       </span>
-      <span className="font-display text-base leading-tight text-cream">
-        {label}
+
+      <span style={{ minWidth: "9em", textAlign: "right" }}>
+        {status === "pending" ? (
+          <span style={{ color: "#ffffff", opacity: 0.5, fontSize: "0.85em" }}>PENDING</span>
+        ) : status === "claimed" ? (
+          <span className="tt-badge tt-badge-yellow">
+            {claimedByDisplayName ?? "CLAIMED"}
+          </span>
+        ) : (
+          <span style={{ color: "#FF0000", fontSize: "0.85em", textDecoration: "line-through" }}>
+            EXPIRED
+          </span>
+        )}
       </span>
-      <span className="justify-self-end">{statusNode}</span>
     </li>
   );
 }
