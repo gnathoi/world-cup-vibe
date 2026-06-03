@@ -24,7 +24,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Goal! The 2026 Sweepstake",
+  title: "Make America Goal Again",
   description: "A World Cup 2026 sweepstake for friends, played in the spirit of 1966.",
 };
 
