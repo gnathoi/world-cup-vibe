@@ -71,8 +71,11 @@ export default async function AdminPage() {
       getCacheAge(),
     ]);
 
+  const bst = (iso: string) =>
+    new Date(iso).toLocaleString("en-GB", { timeZone: "Europe/London" });
+
   const cacheAgeLabel = cacheInfo.fetchedAt
-    ? `Last refresh: ${new Date(cacheInfo.fetchedAt).toLocaleString()}`
+    ? `Last refresh: ${bst(cacheInfo.fetchedAt)} BST`
     : "Never refreshed — no openfootball data cached yet.";
 
   return (
@@ -84,10 +87,10 @@ export default async function AdminPage() {
           <h2 className="font-display text-2xl mt-3">ALLOCATION OVERRIDE</h2>
           <p className="font-mono text-sm text-ink/70 mt-2">
             {allocation
-              ? `Last drawn: ${new Date(allocation.allocatedAt).toLocaleString()} — seed: ${allocation.seed}`
+              ? `Last drawn: ${bst(allocation.allocatedAt)} BST — seed: ${allocation.seed}`
               : "Allocation has not yet run."}
           </p>
-          <form action={reallocateAction} className="mt-5 flex gap-3 items-end">
+          <form action={reallocateAction} className="mt-5 flex flex-col sm:flex-row gap-3 sm:items-end">
             <label className="block flex-1">
               <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
                 SEED (LEAVE BLANK FOR RANDOM)
