@@ -17,7 +17,7 @@ export default function MastheadBar({ signedInAs }: Props) {
         <div className="flex flex-col items-center gap-1 min-w-0">
           <Link
             href="/"
-            className="font-display text-sm sm:text-3xl lg:text-4xl tracking-tight text-center leading-tight"
+            className="font-display text-base sm:text-3xl lg:text-4xl tracking-tight text-center leading-tight"
           >
             MAKE AMERICA GOAL AGAIN
           </Link>
