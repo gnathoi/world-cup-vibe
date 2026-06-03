@@ -21,7 +21,7 @@ import type {
 
 type ParticipantRow = {
   id: string;
-  email: string;
+  email: string | null;
   display_name: string;
   signed_up_at: string;
   spectator: boolean;
@@ -31,7 +31,7 @@ type ParticipantRow = {
 function toParticipant(r: ParticipantRow): Participant {
   return {
     id: r.id,
-    email: r.email,
+    ...(r.email ? { email: r.email } : {}),
     displayName: r.display_name,
     signedUpAt: r.signed_up_at,
     spectator: r.spectator,
@@ -158,11 +158,24 @@ export async function getParticipantById(
   return data ? toParticipant(data as ParticipantRow) : null;
 }
 
+export async function getParticipantByUsername(
+  username: string,
+): Promise<Participant | null> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from("participants")
+    .select("*")
+    .ilike("display_name", username)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toParticipant(data as ParticipantRow) : null;
+}
+
 export async function addParticipant(p: Participant): Promise<void> {
   const sb = getServiceClient();
   const { error } = await sb.from("participants").insert({
     id: p.id,
-    email: p.email,
+    email: p.email ?? null,
     display_name: p.displayName,
     signed_up_at: p.signedUpAt,
     spectator: p.spectator,
@@ -305,6 +318,16 @@ async function kvSet(key: string, value: unknown): Promise<void> {
     .from("kv_store")
     .upsert({ key, value }, { onConflict: "key" });
   if (error) throw error;
+}
+
+export async function getWoodenSpoonWinner(): Promise<string | null> {
+  return await kvGet<string>(KV.WOODEN_SPOON);
+}
+
+export async function setWoodenSpoonWinner(
+  participantId: string,
+): Promise<void> {
+  await kvSet(KV.WOODEN_SPOON, participantId);
 }
 
 export async function getSpecialCursor(): Promise<string | null> {

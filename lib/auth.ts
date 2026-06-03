@@ -9,7 +9,7 @@ import type { Participant } from "./types";
 
 export type SessionData = {
   participantId?: string;
-  email?: string;
+  adminVerified?: boolean;
 };
 
 const SESSION_COOKIE = "goal-2026-session";
@@ -43,7 +43,6 @@ export async function getSession() {
 export async function setSession(p: Participant): Promise<void> {
   const session = await getSession();
   session.participantId = p.id;
-  session.email = p.email;
   await session.save();
 }
 

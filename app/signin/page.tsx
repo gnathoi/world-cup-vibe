@@ -20,40 +20,33 @@ export default async function SignInPage() {
             JOIN THE 2026 SWEEPSTAKE
           </h1>
           <p className="mt-4 font-mono text-sm text-ink/80">
-            Enter an email and a display name. No password. No verification.
+            Pick a username. No password. No fuss.
             For friends, for the love of the game.
           </p>
           <form action={signInAction} className="mt-6 flex flex-col gap-4">
             <label className="block">
               <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
-                DISPLAY NAME
+                USERNAME
               </span>
               <input
-                name="displayName"
+                name="username"
                 type="text"
                 required
-                maxLength={40}
+                minLength={2}
+                maxLength={30}
                 placeholder="e.g. NAT"
                 className="w-full px-3 py-2 bg-cream border border-ink font-mono"
               />
             </label>
-            <label className="block">
-              <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
-                EMAIL
-              </span>
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="you@example.com"
-                className="w-full px-3 py-2 bg-cream border border-ink font-mono"
-              />
-            </label>
+            <p className="font-mono text-xs text-ink/50">
+              2–30 characters, letters, numbers and underscores only.
+              Existing username? Signing in logs you right back in.
+            </p>
             <button
               type="submit"
               className="mt-2 px-4 py-3 bg-scarlet text-cream font-display tracking-widest"
             >
-              SIGN IN
+              JOIN / SIGN IN
             </button>
           </form>
         </Frame>

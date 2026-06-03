@@ -4,34 +4,30 @@ import { redirect } from "next/navigation";
 import { randomUUID } from "node:crypto";
 import {
   addParticipant,
-  getParticipantByEmail,
+  getParticipantByUsername,
   getAllocation,
 } from "@/lib/db";
 import { setSession } from "@/lib/auth";
 import type { Participant } from "@/lib/types";
 
+const USERNAME_RE = /^[a-zA-Z0-9_]{2,30}$/;
+
 export async function signInAction(formData: FormData) {
-  const emailRaw = String(formData.get("email") ?? "");
-  const displayNameRaw = String(formData.get("displayName") ?? "");
-  const email = emailRaw.trim().toLowerCase();
-  const displayName = displayNameRaw.trim();
+  const raw = String(formData.get("username") ?? "").trim();
 
-  if (!email || !displayName) {
-    throw new Error("Email and display name are required.");
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new Error("That email looks malformed.");
+  if (!USERNAME_RE.test(raw)) {
+    throw new Error(
+      "Username must be 2–30 characters: letters, numbers, underscores only.",
+    );
   }
 
-  let participant = await getParticipantByEmail(email);
+  let participant = await getParticipantByUsername(raw);
   if (!participant) {
-    // Spectator if allocation has already happened.
     const allocation = await getAllocation();
     const spectator = !!allocation;
     participant = {
       id: randomUUID(),
-      email,
-      displayName,
+      displayName: raw,
       signedUpAt: new Date().toISOString(),
       spectator,
       paidIn: false,

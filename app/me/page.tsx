@@ -5,6 +5,7 @@ import {
   getParticipants,
   getSpecials,
   getPotPaidBy,
+  getWoodenSpoonWinner,
 } from "@/lib/db";
 import { getMatches } from "@/lib/openfootball";
 import { computeStandings, computePotGbp } from "@/lib/leaderboard";
@@ -40,13 +41,15 @@ export default async function MePage() {
   const me = await getCurrentParticipant();
   if (!me) redirect("/signin");
 
-  const [participants, allocation, specials, paidBy, matches] = await Promise.all([
-    getParticipants(),
-    getAllocation(),
-    getSpecials(),
-    getPotPaidBy(),
-    getMatches(),
-  ]);
+  const [participants, allocation, specials, paidBy, matches, woodenSpoonWinnerId] =
+    await Promise.all([
+      getParticipants(),
+      getAllocation(),
+      getSpecials(),
+      getPotPaidBy(),
+      getMatches(),
+      getWoodenSpoonWinner(),
+    ]);
 
   const standings = computeStandings(participants, allocation, matches);
   const myRow = standings.find((r) => r.participantId === me.id);
@@ -108,7 +111,10 @@ export default async function MePage() {
           <h1 className="font-display text-4xl">
             {me.displayName.toUpperCase()}&apos;S TEAMS
           </h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            {woodenSpoonWinnerId === me.id && (
+              <Stamp tone="sepia-dark">WOODEN SPOON £20</Stamp>
+            )}
             <Stamp tone="cobalt">
               NEXT MATCH IN {countdown.label}
               {countdown.matchLabel ? ` — ${countdown.matchLabel}` : ""}

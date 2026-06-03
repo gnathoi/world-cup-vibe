@@ -4,6 +4,7 @@ import {
   getSpecials,
   getPotPaidBy,
 } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 import { getCacheAge } from "@/lib/openfootball";
 import MastheadBar from "@/components/MastheadBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -13,6 +14,7 @@ import {
   reallocateAction,
   togglePaidAction,
   refreshOpenfootballAction,
+  verifyAdminPinAction,
 } from "./actions";
 import { demoStatus } from "./demo/actions";
 import DemoControls from "./demo/DemoControls";
@@ -20,6 +22,48 @@ import DemoControls from "./demo/DemoControls";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  const session = await getSession();
+
+  if (!session.adminVerified) {
+    return (
+      <div className="flex-1 flex flex-col">
+        <MastheadBar signedInAs="ADMIN" />
+        <main className="flex-1 w-full max-w-xl mx-auto px-6 py-16">
+          <Frame variant="primary" className="p-8 bg-cream">
+            <Stamp tone="scarlet">RESTRICTED</Stamp>
+            <h1 className="mt-4 font-display text-3xl text-ink">
+              ADMIN ACCESS
+            </h1>
+            <p className="mt-3 font-mono text-sm text-ink/70">
+              Enter the admin PIN to continue.
+            </p>
+            <form action={verifyAdminPinAction} className="mt-6 flex flex-col gap-4">
+              <label className="block">
+                <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
+                  PIN
+                </span>
+                <input
+                  name="pin"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  className="w-full px-3 py-2 bg-cream border border-ink font-mono"
+                />
+              </label>
+              <button
+                type="submit"
+                className="px-4 py-3 bg-scarlet text-cream font-display tracking-widest"
+              >
+                ENTER
+              </button>
+            </form>
+          </Frame>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
   const [participants, allocation, specials, paidBy, cacheInfo, demoState] =
     await Promise.all([
       getParticipants(),

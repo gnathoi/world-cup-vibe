@@ -6,7 +6,7 @@ export type ActionResult<T = void> =
 
 export type Participant = {
   id: string;
-  email: string;
+  email?: string; // optional — username-only sign-up does not require it
   displayName: string;
   signedUpAt: string; // ISO 8601
   spectator: boolean; // true if signed up after allocation lock

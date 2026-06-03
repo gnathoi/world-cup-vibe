@@ -2,9 +2,9 @@ import { getCurrentParticipant } from "@/lib/auth";
 import {
   getParticipants,
   getAllocation,
-  getComments,
   getSpecials,
   getPotPaidBy,
+  getWoodenSpoonWinner,
 } from "@/lib/db";
 import { getMatches, getCacheAge } from "@/lib/openfootball";
 import { computeStandings, computePotGbp } from "@/lib/leaderboard";
@@ -14,10 +14,7 @@ import HeroStrip from "@/components/HeroStrip";
 import Frame from "@/components/Frame";
 import RankedRow from "@/components/RankedRow";
 import ChalkLine from "@/components/ChalkLine";
-import BanterPost from "@/components/BanterPost";
 import Stamp from "@/components/Stamp";
-import { postBanterAction } from "./banter-actions";
-import Compose from "@/components/Compose";
 
 export const dynamic = "force-dynamic";
 
@@ -41,9 +38,6 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
     .toUpperCase()}`;
   const matchDay = ref?.matchDay ? `MATCH DAY ${ref.matchDay}` : "PRE-TOURNAMENT";
 
-  // Stage reflects what's already been played, not what's on the calendar.
-  // openfootball ships the full bracket as `scheduled` from day one, so
-  // "some match has round !== group" is true even pre-tournament.
   let stage = "AWAITING KICKOFF";
   if (matches.length > 0) {
     if (played === 0) {
@@ -67,16 +61,16 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
 }
 
 export default async function HomePage() {
-  const [me, participants, allocation, comments, specials, paidBy, matches, cacheInfo] =
+  const [me, participants, allocation, specials, paidBy, matches, cacheInfo, woodenSpoonWinnerId] =
     await Promise.all([
       getCurrentParticipant(),
       getParticipants(),
       getAllocation(),
-      getComments(null),
       getSpecials(),
       getPotPaidBy(),
       getMatches(),
       getCacheAge(),
+      getWoodenSpoonWinner(),
     ]);
 
   const standings = computeStandings(participants, allocation, matches);
@@ -87,7 +81,6 @@ export default async function HomePage() {
     cacheInfo.ageMs !== null &&
     cacheInfo.ageMs > 1000 * 60 * 30;
 
-  const recentComments = comments.slice(-5).reverse();
   const ownerNames = new Map(
     participants.map((p) => [p.id, p.displayName] as const),
   );
@@ -104,7 +97,7 @@ export default async function HomePage() {
         stale={stale}
       />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10 grid gap-8 lg:grid-cols-[1fr_360px_320px]">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10 grid gap-8 lg:grid-cols-[1fr_360px]">
         {/* THE STANDINGS */}
         <section>
           <h2 className="font-display text-3xl mb-4">THE STANDINGS</h2>
@@ -114,8 +107,16 @@ export default async function HomePage() {
                 THE DRAW IS NOT YET DRAWN.
               </p>
               <p className="font-mono text-sm text-ink/70 mt-2">
-                Sign up before midnight to be included.
+                Sign up before midnight on 11 June to be included.
               </p>
+              {!me && (
+                <a
+                  href="/signin"
+                  className="mt-5 inline-block px-4 py-2 bg-scarlet text-cream font-display tracking-widest"
+                >
+                  JOIN THE SWEEPSTAKE
+                </a>
+              )}
             </Frame>
           ) : (
             <ol className="space-y-3">
@@ -125,55 +126,25 @@ export default async function HomePage() {
                   variant={i === 0 ? "primary" : "secondary"}
                   className="bg-cream"
                 >
-                  <RankedRow
-                    rank={i + 1}
-                    displayName={row.displayName}
-                    points={row.points}
-                    teamCodes={row.teamCodes}
-                    status={row.stillIn ? "still-in" : "eliminated"}
-                    isYou={me?.id === row.participantId}
-                    isLeader={i === 0}
-                  />
+                  <div className="relative">
+                    {row.participantId === woodenSpoonWinnerId && (
+                      <div className="absolute top-2 right-2">
+                        <Stamp tone="sepia-dark">WOODEN SPOON £20</Stamp>
+                      </div>
+                    )}
+                    <RankedRow
+                      rank={i + 1}
+                      displayName={row.displayName}
+                      points={row.points}
+                      teamCodes={row.teamCodes}
+                      status={row.stillIn ? "still-in" : "eliminated"}
+                      isYou={me?.id === row.participantId}
+                      isLeader={i === 0}
+                    />
+                  </div>
                 </Frame>
               ))}
             </ol>
-          )}
-        </section>
-
-        {/* TODAY'S BANTER */}
-        <section>
-          <h2 className="font-display text-3xl mb-4">TODAY&apos;S BANTER</h2>
-          {me ? (
-            <Frame variant="primary" className="p-4 bg-cream">
-              {recentComments.length === 0 ? (
-                <p className="font-display text-base text-ink/70">
-                  THE WIRE IS QUIET. POST THE FIRST OBSERVATION.
-                </p>
-              ) : (
-                <ul>
-                  {recentComments.map((c) => (
-                    <BanterPost key={c.id} comment={c} />
-                  ))}
-                </ul>
-              )}
-              <Compose onSubmit={postBanterAction} />
-            </Frame>
-          ) : (
-            <Frame variant="primary" className="p-6 bg-cream text-center">
-              <Stamp tone="cobalt">FOR FRIENDS</Stamp>
-              <h3 className="mt-3 font-display text-2xl leading-tight">
-                JOIN THE 2026 SWEEPSTAKE
-              </h3>
-              <p className="mt-3 font-mono text-sm text-ink/70">
-                Sign up to see the wire and post your own observations.
-              </p>
-              <a
-                href="/signin"
-                className="mt-5 inline-block px-4 py-2 bg-scarlet text-cream font-display tracking-widest"
-              >
-                SIGN IN
-              </a>
-            </Frame>
           )}
         </section>
 
@@ -206,6 +177,22 @@ export default async function HomePage() {
               </ul>
             )}
           </Frame>
+          {!me && (
+            <div className="mt-4">
+              <Frame variant="primary" className="p-5 bg-cream text-center">
+                <Stamp tone="cobalt">FOR FRIENDS</Stamp>
+                <h3 className="mt-3 font-display text-xl leading-tight">
+                  JOIN THE 2026 SWEEPSTAKE
+                </h3>
+                <a
+                  href="/signin"
+                  className="mt-4 inline-block px-4 py-2 bg-scarlet text-cream font-display tracking-widest"
+                >
+                  SIGN IN
+                </a>
+              </Frame>
+            </div>
+          )}
         </section>
       </main>
 

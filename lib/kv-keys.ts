@@ -5,4 +5,5 @@
 export const KV = {
   SPECIAL_CURSOR: "specials:processed-cursor",
   OPENFOOTBALL_CACHE: "openfootball:cache",
+  WOODEN_SPOON: "wooden_spoon:winner",
 } as const;
