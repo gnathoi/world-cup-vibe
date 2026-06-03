@@ -1,0 +1,73 @@
+// Flag emoji for each FIFA 3-letter code used in the 2026 World Cup.
+// Most flags are derived from the ISO 3166-1 alpha-2 code (two regional
+// indicator letters). England and Scotland use Unicode tag sequences.
+
+const FLAGS: Record<string, string> = {
+  // Hosts
+  USA: "🇺🇸",
+  CAN: "🇨🇦",
+  MEX: "🇲🇽",
+
+  // UEFA
+  ENG: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  SCO: "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  FRA: "🇫🇷",
+  GER: "🇩🇪",
+  ESP: "🇪🇸",
+  POR: "🇵🇹",
+  NED: "🇳🇱",
+  ITA: "🇮🇹",
+  BEL: "🇧🇪",
+  CRO: "🇭🇷",
+  DEN: "🇩🇰",
+  SUI: "🇨🇭",
+  AUT: "🇦🇹",
+  POL: "🇵🇱",
+  SRB: "🇷🇸",
+  TUR: "🇹🇷",
+
+  // CONMEBOL
+  ARG: "🇦🇷",
+  BRA: "🇧🇷",
+  URU: "🇺🇾",
+  COL: "🇨🇴",
+  ECU: "🇪🇨",
+  PAR: "🇵🇾",
+
+  // CAF
+  MAR: "🇲🇦",
+  SEN: "🇸🇳",
+  TUN: "🇹🇳",
+  EGY: "🇪🇬",
+  ALG: "🇩🇿",
+  NGA: "🇳🇬",
+  CIV: "🇨🇮",
+  CMR: "🇨🇲",
+  GHA: "🇬🇭",
+
+  // AFC
+  JPN: "🇯🇵",
+  KOR: "🇰🇷",
+  AUS: "🇦🇺",
+  IRN: "🇮🇷",
+  KSA: "🇸🇦",
+  QAT: "🇶🇦",
+  UZB: "🇺🇿",
+  JOR: "🇯🇴",
+
+  // CONCACAF
+  CRC: "🇨🇷",
+  PAN: "🇵🇦",
+  JAM: "🇯🇲",
+
+  // OFC
+  NZL: "🇳🇿",
+
+  // Inter-confederation playoff
+  BOL: "🇧🇴",
+  IRQ: "🇮🇶",
+};
+
+export function flag(code: string): string {
+  return FLAGS[code] ?? "🏳️";
+}

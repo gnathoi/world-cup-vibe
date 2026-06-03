@@ -16,8 +16,6 @@ import {
   refreshOpenfootballAction,
   verifyAdminPinAction,
 } from "./actions";
-import { demoStatus } from "./demo/actions";
-import DemoControls from "./demo/DemoControls";
 
 export const dynamic = "force-dynamic";
 
@@ -64,14 +62,13 @@ export default async function AdminPage() {
     );
   }
 
-  const [participants, allocation, specials, paidBy, cacheInfo, demoState] =
+  const [participants, allocation, specials, paidBy, cacheInfo] =
     await Promise.all([
       getParticipants(),
       getAllocation(),
       getSpecials(),
       getPotPaidBy(),
       getCacheAge(),
-      demoStatus(),
     ]);
 
   const cacheAgeLabel = cacheInfo.fetchedAt
@@ -109,19 +106,6 @@ export default async function AdminPage() {
               RE-ROLL THE DRAW
             </button>
           </form>
-        </Frame>
-
-        <Frame variant="primary" className="p-6 bg-cream">
-          <Stamp tone="scarlet">DEMO MODE</Stamp>
-          <h2 className="font-display text-2xl mt-3">THE SHOWREEL</h2>
-          <p className="font-mono text-sm text-ink/70 mt-2">
-            Wipes all data, adds a 12-person demo cast, runs the draw, then
-            simulates the full 104-match tournament over about five minutes.
-            Don&apos;t run this once real friends have signed up.
-          </p>
-          <div className="mt-5">
-            <DemoControls initial={demoState} />
-          </div>
         </Frame>
 
         <Frame variant="primary" className="p-6 bg-cream">

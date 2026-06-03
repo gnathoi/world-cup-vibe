@@ -1,4 +1,5 @@
 import Stamp from "./Stamp";
+import { flag } from "@/lib/flags";
 
 type Props = {
   code: string;
@@ -22,11 +23,11 @@ export default function TeamCard({
   return (
     <article className="p-5 bg-cream/60 flex flex-col gap-3 h-full">
       <header className="flex items-baseline justify-between">
-        <span
-          className="font-display text-2xl text-sepia-dark"
-          aria-label={`${name} crest fallback`}
-        >
-          {code}
+        <span className="flex items-center gap-2">
+          <span className="text-2xl leading-none" role="img" aria-label={name}>
+            {flag(code)}
+          </span>
+          <span className="font-display text-2xl text-sepia-dark">{code}</span>
         </span>
         {group ? (
           <span className="font-mono text-xs text-ink/60 tracking-widest">
@@ -41,15 +42,11 @@ export default function TeamCard({
       <p>
         {status === "still-in" ? (
           <Stamp tone="cobalt">STILL IN</Stamp>
-        ) : (
-          <Stamp tone="scarlet" className="line-through decoration-2">
-            ELIMINATED
-          </Stamp>
-        )}
+        ) : null}
       </p>
       {nextOpponentCode ? (
         <p className="font-mono text-xs text-ink/70 mt-auto">
-          NEXT: vs {nextOpponentCode}
+          NEXT: {flag(nextOpponentCode)} vs {nextOpponentCode}
           {nextKickoffLocalLabel ? ` — ${nextKickoffLocalLabel}` : ""}
         </p>
       ) : (

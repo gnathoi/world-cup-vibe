@@ -149,7 +149,7 @@ export function computeStandings(
 // per-head contribution; admin can override.
 export function computePotGbp(
   paidCount: number,
-  contributionGbp: number = 40,
+  contributionGbp: number = 10,
 ): number {
   return paidCount * contributionGbp;
 }
