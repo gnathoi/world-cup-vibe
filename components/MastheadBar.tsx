@@ -35,7 +35,9 @@ export default function MastheadBar({ signedInAs }: Props) {
             </span>
           ) : (
             <Link href="/signin" className="stamp text-cream border-cream/60">
-              SIGN IN
+              {Date.now() >= new Date("2026-06-11T00:00:00Z").getTime()
+                ? "SIGN IN"
+                : "SIGN UP"}
             </Link>
           )}
         </div>

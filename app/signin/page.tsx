@@ -46,7 +46,9 @@ export default async function SignInPage() {
               type="submit"
               className="mt-2 px-4 py-3 bg-scarlet text-cream font-display tracking-widest"
             >
-              JOIN / SIGN IN
+              {Date.now() >= new Date("2026-06-11T00:00:00Z").getTime()
+                ? "SIGN IN"
+                : "SIGN UP"}
             </button>
           </form>
         </Frame>

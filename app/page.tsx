@@ -186,15 +186,13 @@ export default async function HomePage() {
           {!me && (
             <div className="mt-4">
               <Frame variant="primary" className="p-5 bg-cream text-center">
-                <Stamp tone="cobalt">FOR FRIENDS</Stamp>
-                <h3 className="mt-3 font-display text-xl leading-tight">
-                  MAKE AMERICA GOAL AGAIN
-                </h3>
                 <a
                   href="/signin"
-                  className="mt-4 inline-block px-4 py-2 bg-scarlet text-cream font-display tracking-widest"
+                  className="mt-2 inline-block px-4 py-2 bg-scarlet text-cream font-display tracking-widest"
                 >
-                  SIGN IN
+                  {Date.now() >= new Date("2026-06-11T00:00:00Z").getTime()
+                    ? "SIGN IN"
+                    : "SIGN UP"}
                 </a>
               </Frame>
             </div>
