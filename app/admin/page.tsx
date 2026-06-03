@@ -8,8 +8,6 @@ import { getSession } from "@/lib/auth";
 import { getCacheAge } from "@/lib/openfootball";
 import MastheadBar from "@/components/MastheadBar";
 import SiteFooter from "@/components/SiteFooter";
-import Frame from "@/components/Frame";
-import Stamp from "@/components/Stamp";
 import {
   reallocateAction,
   togglePaidAction,
@@ -20,43 +18,84 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const panelStyle: React.CSSProperties = {
+  border: "2px solid #00FFFF",
+  padding: "16px 20px",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  color: "#00FFFF",
+  fontSize: "0.8em",
+  marginBottom: "6px",
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  background: "#000000",
+  color: "#ffffff",
+  border: "1px solid #ffffff",
+  padding: "6px 10px",
+  fontSize: "1em",
+  fontFamily: "inherit",
+};
+
+const btnBlue: React.CSSProperties = {
+  background: "#0000FF",
+  color: "#ffffff",
+  border: "2px solid #00FFFF",
+  padding: "8px 16px",
+  fontSize: "1em",
+  fontFamily: "inherit",
+  cursor: "pointer",
+  letterSpacing: "1px",
+};
+
+const btnRed: React.CSSProperties = {
+  ...btnBlue,
+  background: "#FF0000",
+  border: "2px solid #FF0000",
+};
+
 export default async function AdminPage() {
   const session = await getSession();
 
   if (!session.adminVerified) {
     return (
       <div className="flex-1 flex flex-col">
-        <MastheadBar signedInAs="ADMIN" />
-        <main className="flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 py-16">
-          <Frame variant="primary" className="p-8 sm:p-10 bg-cream">
-            <Stamp tone="scarlet">RESTRICTED</Stamp>
-            <h1 className="mt-4 font-display text-3xl text-ink">
-              ADMIN ACCESS
-            </h1>
-            <p className="mt-3 font-mono text-sm text-ink/70">
-              Enter the admin PIN to continue.
-            </p>
-            <form action={verifyAdminPinAction} className="mt-6 flex flex-col gap-4">
-              <label className="block">
-                <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
-                  PIN
-                </span>
-                <input
-                  name="pin"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  className="w-full px-3 py-2 bg-cream border border-ink font-mono"
-                />
-              </label>
-              <button
-                type="submit"
-                className="px-4 py-3 bg-scarlet text-cream font-display tracking-widest"
-              >
-                ENTER
-              </button>
-            </form>
-          </Frame>
+        <MastheadBar signedInAs="ADMIN" pageNum="P600" />
+        <main
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px 12px",
+          }}
+        >
+          <div style={{ width: "100%", maxWidth: "420px" }}>
+            <div style={panelStyle}>
+              <div className="tt-badge tt-badge-red" style={{ marginBottom: "12px" }}>
+                RESTRICTED
+              </div>
+              <div style={{ color: "#FFFF00", fontSize: "1.4em", marginBottom: "16px" }}>
+                ADMIN ACCESS
+              </div>
+              <form action={verifyAdminPinAction} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <label>
+                  <span style={labelStyle}>ENTER PIN:</span>
+                  <input
+                    name="pin"
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                    style={inputStyle}
+                  />
+                </label>
+                <button type="submit" style={btnBlue}>ENTER ▌</button>
+              </form>
+            </div>
+          </div>
         </main>
         <SiteFooter />
       </div>
@@ -73,180 +112,173 @@ export default async function AdminPage() {
     ]);
 
   const bst = (iso: string) =>
-    new Date(iso).toLocaleString("en-GB", { timeZone: "Europe/London" });
+    new Date(iso).toLocaleString("en-GB", { timeZone: "Europe/London" }).toUpperCase();
 
   const cacheAgeLabel = cacheInfo.fetchedAt
-    ? `Last refresh: ${bst(cacheInfo.fetchedAt)} BST`
-    : "Never refreshed — no openfootball data cached yet.";
+    ? `LAST REFRESH: ${bst(cacheInfo.fetchedAt)} BST`
+    : "NEVER REFRESHED";
 
   return (
     <div className="flex-1 flex flex-col">
-      <MastheadBar signedInAs="ADMIN" />
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 grid gap-5 lg:grid-cols-2">
+      <MastheadBar signedInAs="ADMIN" pageNum="P600" />
 
-        {/* ── Add Participant ─────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-6 sm:p-8 bg-cream lg:col-span-2">
-          <Stamp tone="cobalt">THE PLAYERS</Stamp>
-          <h2 className="font-display text-2xl mt-3">ADD PARTICIPANT</h2>
-          <p className="font-mono text-sm text-ink/70 mt-2">
-            Creates a new account. Share the username and password directly.
+      <section
+        style={{
+          background: "#000000",
+          borderBottom: "2px solid #FF00FF",
+          padding: "8px 12px",
+        }}
+      >
+        <div style={{ color: "#FF0000", fontSize: "1.3em" }}>ADMIN — RESTRICTED</div>
+        <div style={{ color: "#00FFFF", fontSize: "0.85em", marginTop: "2px" }}>
+          {cacheAgeLabel}
+        </div>
+      </section>
+
+      <main
+        style={{
+          flex: 1,
+          padding: "12px",
+          display: "grid",
+          gap: "12px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+        }}
+      >
+        {/* ── Add Participant ── */}
+        <section style={{ ...panelStyle, gridColumn: "1 / -1" }}>
+          <div className="tt-badge tt-badge-cyan" style={{ marginBottom: "10px" }}>THE PLAYERS</div>
+          <div style={{ color: "#FFFF00", fontSize: "1.2em", marginBottom: "8px" }}>ADD PARTICIPANT</div>
+          <p style={{ color: "#ffffff", opacity: 0.7, fontSize: "0.9em", marginBottom: "12px" }}>
+            CREATES NEW ACCOUNT — SHARE USERNAME + PASSWORD DIRECTLY
           </p>
-          <form action={addParticipantAction} className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-end">
-            <label className="block flex-1 min-w-0">
-              <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
-                USERNAME
-              </span>
-              <input
-                name="username"
-                type="text"
-                required
-                placeholder="e.g. NAT"
-                className="w-full px-3 py-2 bg-cream border border-ink font-mono"
-              />
+          <form
+            action={addParticipantAction}
+            style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "flex-end" }}
+          >
+            <label style={{ flex: "1 1 160px" }}>
+              <span style={labelStyle}>USERNAME</span>
+              <input name="username" type="text" required placeholder="E.G. NAT" style={inputStyle} />
             </label>
-            <label className="block flex-1 min-w-0">
-              <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
-                PASSWORD
-              </span>
-              <input
-                name="password"
-                type="text"
-                required
-                placeholder="word-word-word"
-                className="w-full px-3 py-2 bg-cream border border-ink font-mono"
-              />
+            <label style={{ flex: "1 1 160px" }}>
+              <span style={labelStyle}>PASSWORD</span>
+              <input name="password" type="text" required placeholder="WORD-WORD-WORD" style={inputStyle} />
             </label>
-            <button
-              type="submit"
-              className="shrink-0 px-4 py-3 bg-cobalt text-cream font-display tracking-widest"
-            >
-              ADD
-            </button>
+            <button type="submit" style={btnBlue}>ADD</button>
           </form>
           {participants.length > 0 && (
-            <ul className="mt-4 divide-y divide-ink/10">
-              {participants.map((p) => (
-                <li key={p.id} className="py-2 flex items-center justify-between font-mono text-sm gap-2">
-                  <span className="truncate">{p.displayName}</span>
-                  <span className="shrink-0 text-ink/40 text-xs">
-                    {p.spectator ? "SPECTATOR" : "PLAYER"}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "12px" }}>
+              <tbody>
+                {participants.map((p) => (
+                  <tr key={p.id} style={{ borderBottom: "1px solid #222222" }}>
+                    <td style={{ padding: "4px 0", color: "#ffffff", fontSize: "0.9em" }}>
+                      {p.displayName}
+                    </td>
+                    <td style={{ padding: "4px 0", textAlign: "right", color: "#00FFFF", fontSize: "0.8em" }}>
+                      {p.spectator ? "SPECTATOR" : "PLAYER"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-        </Frame>
+        </section>
 
-        {/* ── Refresh ─────────────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-6 sm:p-8 bg-cream">
-          <Stamp tone="cobalt">THE WIRE</Stamp>
-          <h2 className="font-display text-2xl mt-3">REFRESH OPENFOOTBALL</h2>
-          <p className="font-mono text-sm text-ink/70 mt-2 break-words">{cacheAgeLabel}</p>
-          <form action={refreshOpenfootballAction} className="mt-4">
-            <button
-              type="submit"
-              className="px-4 py-3 bg-cobalt text-cream font-display tracking-widest"
-            >
-              REFRESH FROM OPENFOOTBALL
-            </button>
+        {/* ── Refresh ── */}
+        <section style={panelStyle}>
+          <div className="tt-badge tt-badge-cyan" style={{ marginBottom: "10px" }}>THE WIRE</div>
+          <div style={{ color: "#FFFF00", fontSize: "1.2em", marginBottom: "8px" }}>REFRESH OPENFOOTBALL</div>
+          <p style={{ color: "#ffffff", opacity: 0.7, fontSize: "0.9em", marginBottom: "12px", wordBreak: "break-all" }}>
+            {cacheAgeLabel}
+          </p>
+          <form action={refreshOpenfootballAction}>
+            <button type="submit" style={btnBlue}>REFRESH FROM OPENFOOTBALL</button>
           </form>
-        </Frame>
+        </section>
 
-        {/* ── Draw ────────────────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-6 sm:p-8 bg-cream">
-          <Stamp tone="scarlet">THE DRAW</Stamp>
-          <h2 className="font-display text-2xl mt-3">ALLOCATION OVERRIDE</h2>
-          <p className="font-mono text-sm text-ink/70 mt-2 break-all">
-            {allocation
-              ? `Last drawn: ${bst(allocation.allocatedAt)} BST`
-              : "Allocation has not yet run."}
+        {/* ── Draw ── */}
+        <section style={panelStyle}>
+          <div className="tt-badge tt-badge-red" style={{ marginBottom: "10px" }}>THE DRAW</div>
+          <div style={{ color: "#FFFF00", fontSize: "1.2em", marginBottom: "8px" }}>ALLOCATION OVERRIDE</div>
+          <p style={{ color: "#ffffff", opacity: 0.7, fontSize: "0.9em", marginBottom: "4px", wordBreak: "break-all" }}>
+            {allocation ? `LAST DRAWN: ${bst(allocation.allocatedAt)} BST` : "NOT YET RUN"}
           </p>
           {allocation && (
-            <p className="font-mono text-xs text-ink/40 mt-1 break-all">
-              seed: {allocation.seed}
+            <p style={{ color: "#00FFFF", opacity: 0.5, fontSize: "0.75em", marginBottom: "12px", wordBreak: "break-all" }}>
+              SEED: {allocation.seed}
             </p>
           )}
-          <form action={reallocateAction} className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-end">
-            <label className="block flex-1 min-w-0">
-              <span className="block font-mono text-xs tracking-widest text-ink/70 mb-1">
-                SEED (LEAVE BLANK FOR RANDOM)
-              </span>
-              <input
-                name="seed"
-                type="text"
-                placeholder="optional"
-                className="w-full px-3 py-2 bg-cream border border-ink font-mono"
-              />
+          <form
+            action={reallocateAction}
+            style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "flex-end" }}
+          >
+            <label style={{ flex: "1 1 200px" }}>
+              <span style={labelStyle}>SEED (BLANK = RANDOM)</span>
+              <input name="seed" type="text" placeholder="OPTIONAL" style={inputStyle} />
             </label>
-            <button
-              type="submit"
-              className="shrink-0 px-4 py-3 bg-scarlet text-cream font-display tracking-widest"
-            >
-              RE-ROLL THE DRAW
-            </button>
+            <button type="submit" style={btnRed}>RE-ROLL</button>
           </form>
-        </Frame>
+        </section>
 
-        {/* ── Paid-in Ledger ──────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-6 sm:p-8 bg-cream">
-          <Stamp tone="cobalt">THE POT</Stamp>
-          <h2 className="font-display text-2xl mt-3">PAID-IN LEDGER</h2>
-          <ul className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-1">
-            {participants.map((p) => {
-              const paid = paidBy.includes(p.id);
-              return (
-                <li
-                  key={p.id}
-                  className="flex items-center justify-between border-b border-ink/10 py-2 gap-2"
-                >
-                  <span className="font-mono text-sm truncate">{p.displayName}</span>
-                  <form action={togglePaidAction} className="shrink-0">
-                    <input type="hidden" name="participantId" value={p.id} />
-                    <button
-                      type="submit"
-                      className={`stamp ${paid ? "text-cobalt border-cobalt" : "text-ink/40 border-ink/30"}`}
-                    >
-                      {paid ? "PAID" : "PAY"}
-                    </button>
-                  </form>
-                </li>
-              );
-            })}
-          </ul>
-        </Frame>
+        {/* ── Paid-in Ledger ── */}
+        <section style={panelStyle}>
+          <div className="tt-badge tt-badge-cyan" style={{ marginBottom: "10px" }}>THE POT</div>
+          <div style={{ color: "#FFFF00", fontSize: "1.2em", marginBottom: "12px" }}>PAID-IN LEDGER</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <tbody>
+              {participants.map((p) => {
+                const paid = paidBy.includes(p.id);
+                return (
+                  <tr key={p.id} style={{ borderBottom: "1px solid #222222" }}>
+                    <td style={{ padding: "5px 0", color: "#ffffff", fontSize: "0.9em" }}>
+                      {p.displayName}
+                    </td>
+                    <td style={{ padding: "5px 0", textAlign: "right" }}>
+                      <form action={togglePaidAction}>
+                        <input type="hidden" name="participantId" value={p.id} />
+                        <button
+                          type="submit"
+                          className={paid ? "tt-badge tt-badge-green" : "tt-badge tt-badge-white"}
+                          style={{ cursor: "pointer", border: "none" }}
+                        >
+                          {paid ? "PAID" : "UNPAID"}
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
 
-        {/* ── Specials ────────────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-6 sm:p-8 bg-cream">
-          <Stamp tone="sepia-dark">THE BOOKIE</Stamp>
-          <h2 className="font-display text-2xl mt-3">SPECIALS</h2>
-          <ul className="mt-4 divide-y divide-ink/10">
-            {specials.length === 0 ? (
-              <li className="font-mono text-sm italic text-ink/60 py-2">
-                No specials yet — hit REFRESH FROM OPENFOOTBALL to seed them.
-              </li>
-            ) : (
-              specials.map((s) => (
-                <li key={s.id} className="py-3 font-mono text-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="flex-1 min-w-0">
-                      <span className="text-scarlet">£{s.payoutGbp}</span>
-                      {" — "}
-                      {s.label}
-                    </span>
-                    <span className="shrink-0 uppercase tracking-widest text-ink/50 text-xs pt-0.5">
-                      {s.status}
-                    </span>
-                  </div>
-                  {s.ownerParticipantId && (
-                    <p className="text-xs text-ink/40 mt-1">
-                      owner set
-                    </p>
-                  )}
-                </li>
-              ))
-            )}
-          </ul>
-        </Frame>
+        {/* ── Specials ── */}
+        <section style={panelStyle}>
+          <div className="tt-badge tt-badge-magenta" style={{ marginBottom: "10px" }}>THE BOOKIE</div>
+          <div style={{ color: "#FFFF00", fontSize: "1.2em", marginBottom: "12px" }}>SPECIALS</div>
+          {specials.length === 0 ? (
+            <p style={{ color: "#ffffff", opacity: 0.5, fontSize: "0.9em" }}>
+              NO SPECIALS — HIT REFRESH FROM OPENFOOTBALL TO SEED
+            </p>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                {specials.map((s) => (
+                  <tr key={s.id} style={{ borderBottom: "1px solid #222222" }}>
+                    <td style={{ padding: "4px 0", color: "#00FF00", whiteSpace: "nowrap", paddingRight: "10px" }}>
+                      £{s.payoutGbp}
+                    </td>
+                    <td style={{ padding: "4px 0", color: "#00FFFF", fontSize: "0.9em" }}>
+                      {s.label.toUpperCase()}
+                    </td>
+                    <td style={{ padding: "4px 0", textAlign: "right", color: "#FFFF00", fontSize: "0.8em" }}>
+                      {s.status.toUpperCase()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
 
       </main>
       <SiteFooter />

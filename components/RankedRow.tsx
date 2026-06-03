@@ -1,4 +1,3 @@
-import Stamp from "./Stamp";
 import { flag } from "@/lib/flags";
 
 type Props = {
@@ -20,51 +19,70 @@ export default function RankedRow({
   isYou,
   isLeader,
 }: Props) {
+  const rowStyle: React.CSSProperties = isYou
+    ? { background: "#0000FF" }
+    : isLeader
+    ? { background: "#111111" }
+    : {};
+
+  const nameStyle: React.CSSProperties = isLeader
+    ? { color: "#FFFF00" }
+    : { color: "#ffffff" };
+
+  const aliveCount = status === "still-in" ? teamCodes.length : 0;
+
   return (
-    <li
-      className={`grid grid-cols-[3rem_1fr_auto] gap-x-4 gap-y-2 items-baseline p-4 ${
-        isYou ? "bg-sepia/10" : ""
-      } ${isLeader ? "outline outline-2 outline-scarlet" : ""}`}
-    >
-      <span
-        className="font-display text-5xl text-sepia-dark leading-none text-right"
-        aria-hidden
+    <tr style={rowStyle}>
+      <td
+        style={{
+          color: "#00FFFF",
+          textAlign: "right",
+          padding: "5px 8px 5px 10px",
+          fontSize: "1.2em",
+          verticalAlign: "middle",
+          whiteSpace: "nowrap",
+        }}
       >
         {rank}
-      </span>
-      <span className="font-display text-2xl text-ink leading-tight">
-        {displayName}
-        {isYou ? (
-          <span className="ml-2 stamp text-cobalt border-cobalt">YOU</span>
-        ) : null}
-      </span>
-      <span className="font-mono text-xl text-ink tabular-nums">
-        {points} pts
-      </span>
-      <span />
-      <ul className="col-span-1 flex flex-wrap gap-1.5">
-        {teamCodes.slice(0, 6).map((code) => (
-          <li key={code}>
-            <span className="stamp text-ink border-ink/40">
-              {flag(code)} {code}
-            </span>
-          </li>
-        ))}
-        {teamCodes.length > 6 ? (
-          <li>
-            <span className="stamp text-ink/70 border-ink/30">
-              +{teamCodes.length - 6} MORE
-            </span>
-          </li>
-        ) : null}
-      </ul>
-      <span className="justify-self-end">
-        {teamCodes.length === 0 ? null : status === "still-in" ? (
-          <Stamp tone="cobalt">STILL IN</Stamp>
-        ) : (
-          <Stamp tone="scarlet">ELIMINATED</Stamp>
+      </td>
+
+      <td style={{ padding: "5px 8px", verticalAlign: "middle" }}>
+        <span style={nameStyle} className={isLeader ? "tt-flash" : undefined}>
+          {displayName}
+        </span>
+        {isYou && (
+          <span
+            className="tt-badge tt-badge-cyan"
+            style={{ marginLeft: "8px", fontSize: "0.75em" }}
+          >
+            YOU
+          </span>
         )}
-      </span>
-    </li>
+        {teamCodes.length > 0 && (
+          <div style={{ fontSize: "0.8em", color: "#ffffff", opacity: 0.65, marginTop: "2px" }}>
+            {teamCodes.slice(0, 5).map((c) => `${flag(c)} ${c}`).join("  ")}
+            {teamCodes.length > 5 && (
+              <span style={{ color: "#00FFFF" }}> +{teamCodes.length - 5}</span>
+            )}
+          </div>
+        )}
+      </td>
+
+      <td style={{ padding: "5px 8px", textAlign: "right", verticalAlign: "middle", whiteSpace: "nowrap" }}>
+        {aliveCount > 0 ? (
+          <span style={{ color: "#FFFF00", fontSize: "0.9em" }}>{aliveCount} ALIVE</span>
+        ) : (
+          <span style={{ color: "#ffffff", opacity: 0.4, fontSize: "0.9em" }}>0</span>
+        )}
+      </td>
+
+      <td style={{ padding: "5px 10px 5px 4px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
+        {status === "still-in" ? (
+          <span className="tt-badge tt-badge-green">IN</span>
+        ) : (
+          <span className="tt-badge tt-badge-red">OUT</span>
+        )}
+      </td>
+    </tr>
   );
 }

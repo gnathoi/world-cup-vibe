@@ -12,10 +12,8 @@ import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
 import MastheadBar from "@/components/MastheadBar";
 import SiteFooter from "@/components/SiteFooter";
 import HeroStrip from "@/components/HeroStrip";
-import Frame from "@/components/Frame";
 import RankedRow from "@/components/RankedRow";
 import ChalkLine from "@/components/ChalkLine";
-import Stamp from "@/components/Stamp";
 
 export const dynamic = "force-dynamic";
 
@@ -78,8 +76,6 @@ export default async function HomePage() {
   const standings = computeStandings(participants, allocation, matches);
   const potGbp = computePotGbp(participants.length);
 
-  // Fall back to defaults when no draw has run yet so the chalkboard
-  // always shows the bets, not "bookie is on holiday".
   const displaySpecials =
     specials.length > 0
       ? specials
@@ -89,7 +85,6 @@ export default async function HomePage() {
           status: "pending" as const,
         }));
   const heroInfo = formatMatchDayLabel(matches);
-  const stale = false; // stale notice lives on /admin, not the homepage
 
   const ownerNames = new Map(
     participants.map((p) => [p.id, p.displayName] as const),
@@ -97,52 +92,72 @@ export default async function HomePage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <MastheadBar signedInAs={me?.displayName ?? null} />
+      <MastheadBar signedInAs={me?.displayName ?? null} pageNum="P100" />
       <HeroStrip
         matchDayLabel={heroInfo.label}
         stage={heroInfo.stage}
         matchesPlayed={heroInfo.played}
         matchesRemaining={heroInfo.remaining}
         potGbp={potGbp}
-        stale={stale}
+        stale={false}
       />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10 grid gap-8 lg:grid-cols-[1fr_360px]">
-        {/* THE STANDINGS */}
-        <section>
-          <h2 className="font-display text-3xl mb-4">THE STANDINGS</h2>
-          {standings.length === 0 ? (
-            <Frame variant="primary" className="p-6 bg-cream">
-              <p className="font-display text-lg">
-                THE DRAW IS NOT YET DRAWN.
-              </p>
-              <p className="font-mono text-sm text-ink/70 mt-2">
-                Sign up before midnight on 11 June to be included.
-              </p>
-              {!me && (
-                <a
-                  href="/signin"
-                  className="mt-5 inline-block px-4 py-2 bg-scarlet text-cream font-display tracking-widest"
+      <main style={{ flex: 1, padding: "0 0 16px" }}>
+        {/* Two-column on desktop */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 280px",
+            gap: "0",
+          }}
+          className="teletext-grid"
+        >
+          {/* STANDINGS */}
+          <section style={{ borderRight: "1px solid #0000FF", padding: "0 0 12px" }}>
+            <div
+              style={{
+                background: "#000000",
+                color: "#FFFF00",
+                borderLeft: "4px solid #FFFF00",
+                padding: "5px 10px",
+                fontSize: "1.1em",
+                letterSpacing: "2px",
+              }}
+            >
+              ★ THE STANDINGS
+            </div>
+            <div style={{ height: "2px", background: "#FFFF00" }} />
+
+            {standings.length === 0 ? (
+              <div style={{ padding: "20px 12px" }}>
+                <div
+                  style={{
+                    border: "2px solid #FFFF00",
+                    padding: "16px",
+                    color: "#FFFF00",
+                    fontSize: "1.1em",
+                  }}
                 >
-                  JOIN THE SWEEPSTAKE
-                </a>
-              )}
-            </Frame>
-          ) : (
-            <ol className="space-y-3">
-              {standings.slice(0, 8).map((row, i) => (
-                <Frame
-                  key={row.participantId}
-                  variant={i === 0 ? "primary" : "secondary"}
-                  className="bg-cream"
-                >
-                  <div className="relative">
-                    {row.participantId === woodenSpoonWinnerId && (
-                      <div className="absolute top-2 right-2">
-                        <Stamp tone="sepia-dark">WOODEN SPOON £20</Stamp>
-                      </div>
-                    )}
+                  NO DATA — DRAW NOT YET RUN
+                  <div style={{ color: "#00FFFF", fontSize: "0.85em", marginTop: "6px" }}>
+                    SIGN UP BEFORE 11 JUN 2026
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #333333" }}>
+                    <th style={{ color: "#00FFFF", padding: "4px 8px 4px 10px", textAlign: "right", fontSize: "0.8em", fontWeight: "normal" }}>#</th>
+                    <th style={{ color: "#00FFFF", padding: "4px 8px", textAlign: "left", fontSize: "0.8em", fontWeight: "normal" }}>PLAYER</th>
+                    <th style={{ color: "#00FFFF", padding: "4px 8px", textAlign: "right", fontSize: "0.8em", fontWeight: "normal" }}>ALIVE</th>
+                    <th style={{ color: "#00FFFF", padding: "4px 10px 4px 4px", fontSize: "0.8em", fontWeight: "normal" }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {standings.slice(0, 12).map((row, i) => (
                     <RankedRow
+                      key={row.participantId}
                       rank={i + 1}
                       displayName={row.displayName}
                       points={row.points}
@@ -151,60 +166,89 @@ export default async function HomePage() {
                       isYou={me?.id === row.participantId}
                       isLeader={i === 0}
                     />
-                  </div>
-                </Frame>
-              ))}
-            </ol>
-          )}
-        </section>
-
-        {/* BOOKIES' SPECIALS */}
-        <section>
-          <h2 className="font-display text-3xl mb-1">THE BOOKIES&apos; SPECIALS</h2>
-          <p className="font-mono italic text-xs text-ink/70 mb-3">
-            side wagers on unlikely events
-          </p>
-          <Frame variant="chalkboard" className="p-5">
-            {displaySpecials.length === 0 ? (
-              <p className="font-display text-cream/80">
-                THE BOOKIE IS ON HOLIDAY. NO SPECIALS THIS TOURNAMENT.
-              </p>
-            ) : (
-              <ul>
-                {displaySpecials.map((s) => (
-                  <ChalkLine
-                    key={s.id}
-                    payoutGbp={s.payoutGbp}
-                    label={s.label.toUpperCase()}
-                    status={s.status}
-                    claimedByDisplayName={
-                      s.ownerParticipantId
-                        ? ownerNames.get(s.ownerParticipantId)
-                        : undefined
-                    }
-                  />
-                ))}
-              </ul>
+                  ))}
+                  {woodenSpoonWinnerId && (() => {
+                    const spoonRow = standings.find(r => r.participantId === woodenSpoonWinnerId);
+                    const spoonIdx = standings.findIndex(r => r.participantId === woodenSpoonWinnerId);
+                    if (!spoonRow || spoonIdx < 12) return null;
+                    return (
+                      <tr>
+                        <td colSpan={4} style={{ padding: "4px 10px", fontSize: "0.85em" }}>
+                          <span className="tt-badge tt-badge-yellow tt-flash">
+                            WOODEN SPOON: {spoonRow.displayName} £20
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })()}
+                </tbody>
+              </table>
             )}
-          </Frame>
-          {!me && (
-            <div className="mt-4">
-              <Frame variant="primary" className="p-5 bg-cream text-center">
-                <a
-                  href="/signin"
-                  className="mt-2 inline-block px-4 py-2 bg-scarlet text-cream font-display tracking-widest"
-                >
-                  {Date.now() >= new Date("2026-06-11T00:00:00Z").getTime()
-                    ? "SIGN IN"
-                    : "SIGN UP"}
-                </a>
-              </Frame>
+            <div style={{ padding: "6px 10px", fontSize: "0.8em", color: "#ffffff", opacity: 0.5 }}>
+              <span className="tt-cursor">▌</span> 101 FOR TEAM ALLOCATION
             </div>
-          )}
-        </section>
+          </section>
+
+          {/* SPECIALS SIDEBAR */}
+          <section style={{ padding: "0 0 12px" }}>
+            <div
+              style={{
+                background: "#FF00FF",
+                color: "#000000",
+                padding: "5px 10px",
+                fontSize: "1.1em",
+                letterSpacing: "2px",
+              }}
+            >
+              SPECIALS
+            </div>
+            <div style={{ height: "2px", background: "#FF00FF" }} />
+            <div style={{ padding: "8px 10px" }}>
+              <div style={{ color: "#FFFF00", fontSize: "0.8em", borderBottom: "1px solid #333333", paddingBottom: "4px", marginBottom: "6px" }}>
+                BOOKIES&apos; PICKS
+              </div>
+              {displaySpecials.length === 0 ? (
+                <p style={{ color: "#ffffff", opacity: 0.6, fontSize: "0.9em" }}>
+                  BOOKIE ON HOLIDAY
+                </p>
+              ) : (
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  {displaySpecials.map((s) => (
+                    <ChalkLine
+                      key={s.id}
+                      payoutGbp={s.payoutGbp}
+                      label={s.label.toUpperCase()}
+                      status={s.status}
+                      claimedByDisplayName={
+                        s.ownerParticipantId
+                          ? ownerNames.get(s.ownerParticipantId)
+                          : undefined
+                      }
+                    />
+                  ))}
+                </ul>
+              )}
+              <div style={{ color: "#FFFF00", fontSize: "0.8em", marginTop: "10px", borderTop: "1px solid #333333", paddingTop: "6px" }}>
+                PRESS 300 FOR MY TEAMS
+              </div>
+            </div>
+          </section>
+        </div>
       </main>
 
       <SiteFooter showAdminLink />
+
+      <style>{`
+        @media (max-width: 700px) {
+          .teletext-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .teletext-grid > section:first-child {
+            border-right: none !important;
+            border-bottom: 2px solid #0000FF;
+          }
+        }
+      `}</style>
     </div>
   );
 }

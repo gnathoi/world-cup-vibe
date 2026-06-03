@@ -1,119 +1,134 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #f5eddc;
-  --color-sepia: #d9b26a;
-  --color-sepia-dark: #8a6f3a;
-  --color-scarlet: #b8331f;
-  --color-cobalt: #2a4e9e;
-  --color-ink: #1a1a1a;
+  --color-tt-black:   #000000;
+  --color-tt-red:     #FF0000;
+  --color-tt-green:   #00FF00;
+  --color-tt-yellow:  #FFFF00;
+  --color-tt-blue:    #0000FF;
+  --color-tt-magenta: #FF00FF;
+  --color-tt-cyan:    #00FFFF;
+  --color-tt-white:   #FFFFFF;
 
-  --font-display: var(--font-alfa-slab-one), Georgia, serif;
-  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-tt: 'VT323', 'Courier New', monospace;
 
   --radius-frame: 0px;
 }
 
+@font-face {
+  font-family: 'VT323';
+  src: url('https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2hsYHpT2dkNE.woff2') format('woff2');
+  font-display: swap;
+}
+
 :root {
-  --background: var(--color-cream);
-  --foreground: var(--color-ink);
+  --background: #000000;
+  --foreground: #ffffff;
+}
+
+html {
+  font-size: 18px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-}
-
-.halftone {
-  /* CSS-only halftone: tiled radial dots, no external asset needed. */
-  background-image: radial-gradient(
-    circle at 50% 50%,
-    var(--color-sepia-dark) 0,
-    var(--color-sepia-dark) 0.6px,
-    transparent 1.4px,
-    transparent 100%
-  );
-  background-size: 6px 6px;
-  background-position: 0 0;
-  mix-blend-mode: multiply;
-  opacity: 0.25;
-  pointer-events: none;
-}
-
-.frame-double {
-  position: relative;
-  border: 1px solid var(--color-scarlet);
-  padding: 4px;
-}
-.frame-double::before {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border: 1px solid var(--color-ink);
-  pointer-events: none;
-}
-.frame-double > * {
-  position: relative;
-  z-index: 1;
-}
-
-.frame-pot {
-  position: relative;
-  border: 3px solid var(--color-scarlet);
-  padding: 5px;
-}
-.frame-pot::before {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border: 2px solid var(--color-ink);
-  pointer-events: none;
-}
-.frame-pot > * {
-  position: relative;
-  z-index: 1;
-}
-
-.frame-secondary {
-  border-color: var(--color-sepia-dark);
-}
-.frame-secondary::before {
-  border-color: var(--color-ink);
-}
-
-.frame-chalkboard {
-  border: 1px solid var(--color-ink);
-  background: var(--color-ink);
-  color: var(--color-cream);
-}
-.frame-chalkboard::before {
-  display: none;
-}
-
-.stamp {
-  display: inline-block;
-  font-family: var(--font-display);
-  font-size: 13px;
-  letter-spacing: 0.14em;
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--font-tt);
   text-transform: uppercase;
-  padding: 4px 10px;
-  border: 1px solid currentColor;
-  line-height: 1;
+  line-height: 1.35;
 }
 
+* {
+  border-radius: 0 !important;
+}
+
+/* ── Cursor blink ── */
+@keyframes tt-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.tt-cursor {
+  animation: tt-blink 1s step-end infinite;
+  display: inline-block;
+}
+.tt-flash {
+  animation: tt-blink 0.8s step-end infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt-cursor, .tt-flash { animation: none; opacity: 1; }
+}
+
+/* ── Badges ── */
+.tt-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: 0.85em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.tt-badge-green   { background: #00FF00; color: #000000; }
+.tt-badge-red     { background: #FF0000; color: #ffffff; }
+.tt-badge-yellow  { background: #FFFF00; color: #000000; }
+.tt-badge-cyan    { background: #00FFFF; color: #000000; }
+.tt-badge-blue    { background: #0000FF; color: #ffffff; }
+.tt-badge-magenta { background: #FF00FF; color: #000000; }
+.tt-badge-white   { background: #ffffff; color: #000000; }
+
+/* ── Section separators ── */
+.tt-sep {
+  width: 100%;
+  height: 2px;
+  border: none;
+}
+.tt-sep-cyan    { background: #00FFFF; }
+.tt-sep-magenta { background: #FF00FF; }
+.tt-sep-yellow  { background: #FFFF00; }
+.tt-sep-blue    { background: #0000FF; }
+.tt-sep-white   { background: #ffffff; }
+
+/* ── Section header bars ── */
+.tt-section-head {
+  display: block;
+  padding: 3px 10px;
+  font-size: 1.1em;
+  letter-spacing: 0.05em;
+}
+.tt-section-head-yellow  { background: #000000; color: #FFFF00; border-left: 4px solid #FFFF00; }
+.tt-section-head-magenta { background: #FF00FF; color: #000000; }
+.tt-section-head-cyan    { background: #00FFFF; color: #000000; }
+.tt-section-head-blue    { background: #0000FF; color: #ffffff; }
+
+/* ── Teletext borders ── */
+.tt-border-cyan    { border: 2px solid #00FFFF; }
+.tt-border-yellow  { border: 2px solid #FFFF00; }
+.tt-border-white   { border: 1px solid #ffffff; }
+.tt-border-blue    { border: 2px solid #0000FF; }
+
+/* ── Focus ring ── */
 :focus-visible {
-  outline: 2px solid var(--color-cobalt);
+  outline: 2px solid #00FFFF;
   outline-offset: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+/* ── Form inputs ── */
+input, textarea, select {
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  font-family: var(--font-tt);
+  text-transform: uppercase;
+  font-size: 1em;
 }
+input::placeholder { color: #555555; }
+input:focus, textarea:focus { outline: 2px solid #00FFFF; border-color: #00FFFF; }
+
+/* ── Buttons ── */
+button {
+  font-family: var(--font-tt);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 8px; background: #000000; }
+::-webkit-scrollbar-thumb { background: #0000FF; }

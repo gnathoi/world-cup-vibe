@@ -1,9 +1,8 @@
 import { getAllocation, getParticipants, getSpecials } from "@/lib/db";
 import MastheadBar from "@/components/MastheadBar";
 import SiteFooter from "@/components/SiteFooter";
-import Frame from "@/components/Frame";
-import Stamp from "@/components/Stamp";
 import { getCurrentParticipant } from "@/lib/auth";
+import { flag } from "@/lib/flags";
 
 export const dynamic = "force-dynamic";
 
@@ -19,87 +18,121 @@ export default async function CeremonyPage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <MastheadBar signedInAs={me?.displayName ?? null} />
+      <MastheadBar signedInAs={me?.displayName ?? null} pageNum="P400" />
 
       {!allocation ? (
-        <section className="flex-1 bg-ink text-cream flex flex-col items-center justify-center py-32 px-6 text-center">
-          <Stamp tone="cream" className="border-cream/60">
+        <main
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "48px 20px",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ color: "#00FFFF", fontSize: "0.9em", marginBottom: "12px" }}>
             THE CEREMONY OF 2026
-          </Stamp>
-          <h1 className="mt-6 font-display text-5xl tracking-tight">
+          </div>
+          <div style={{ color: "#FFFF00", fontSize: "2em", lineHeight: 1.1 }}>
             DOORS OPEN AT MIDNIGHT.
-          </h1>
-          <p className="mt-4 font-mono text-sm text-cream/70 max-w-md">
-            The draw runs at 2026-06-11 00:00 UTC. Until then, this page sits in
-            silence. The clock ticks alone.
-          </p>
-        </section>
+          </div>
+          <div style={{ color: "#ffffff", fontSize: "0.9em", marginTop: "12px", opacity: 0.7 }}>
+            DRAW RUNS 11 JUN 2026 00:00 UTC
+          </div>
+          <div style={{ marginTop: "24px" }}>
+            <span className="tt-cursor">▌</span>
+            <span style={{ color: "#ffffff", opacity: 0.5, fontSize: "0.85em" }}>
+              {" "}THE CLOCK TICKS ALONE
+            </span>
+          </div>
+        </main>
       ) : (
-        <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-10">
-          <header className="mb-8 text-center">
-            <Stamp tone="cobalt">THE LEDGER STANDS</Stamp>
-            <h1 className="mt-3 font-display text-5xl">
+        <main style={{ flex: 1, padding: "0 0 16px" }}>
+          <section
+            style={{
+              background: "#000000",
+              borderBottom: "2px solid #FF00FF",
+              padding: "8px 12px",
+            }}
+          >
+            <div style={{ color: "#FFFF00", fontSize: "1.5em" }}>
               THE CEREMONY OF 2026 — FINAL LEDGER
-            </h1>
-            <p className="mt-2 font-mono text-sm text-ink/60">
-              Drawn {new Date(allocation.allocatedAt).toLocaleString()} — seed{" "}
-              <code>{allocation.seed}</code>
-            </p>
-          </header>
-
-          <section className="mb-10">
-            <h2 className="font-display text-2xl mb-4">ACT 1 — THE TEAMS</h2>
-            <Frame variant="primary" className="bg-cream">
-              <ul>
-                {allocation.byParticipant.map((row) => (
-                  <li
-                    key={row.participantId}
-                    className="grid grid-cols-[1fr_auto] gap-4 items-baseline px-5 py-3 border-b border-ink/10 last:border-b-0"
-                  >
-                    <span className="font-display text-2xl">
-                      {idToName.get(row.participantId) ?? "?"}
-                    </span>
-                    <span className="font-mono text-sm tracking-widest text-ink/80">
-                      {row.teamCodes.join("  ")}{" "}
-                      <span className="text-ink/50">
-                        ({row.teamCodes.length} teams)
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </Frame>
+            </div>
+            <div style={{ color: "#00FFFF", fontSize: "0.85em", marginTop: "2px" }}>
+              DRAWN {new Date(allocation.allocatedAt).toLocaleString("en-GB", { timeZone: "Europe/London" }).toUpperCase()}
+            </div>
           </section>
 
+          {/* ACT 1 — THE TEAMS */}
+          <section style={{ marginBottom: "0" }}>
+            <div
+              style={{
+                background: "#0000FF",
+                color: "#ffffff",
+                padding: "4px 12px",
+                fontSize: "1em",
+                borderTop: "1px solid #00FFFF",
+              }}
+            >
+              ACT 1 — THE TEAMS
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                {allocation.byParticipant.map((row) => (
+                  <tr key={row.participantId} style={{ borderBottom: "1px solid #222222" }}>
+                    <td style={{ padding: "6px 12px", color: "#FFFF00", fontSize: "1.1em", whiteSpace: "nowrap" }}>
+                      {idToName.get(row.participantId) ?? "?"}
+                    </td>
+                    <td style={{ padding: "6px 12px", color: "#ffffff", fontSize: "0.9em" }}>
+                      {row.teamCodes.map((c) => `${flag(c)} ${c}`).join("  ")}
+                      <span style={{ color: "#00FFFF", opacity: 0.6, fontSize: "0.8em", marginLeft: "8px" }}>
+                        ({row.teamCodes.length} TEAMS)
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {/* ACT 2 — SPECIALS */}
           <section>
-            <h2 className="font-display text-2xl mb-4">
-              ACT 2 — THE BOOKIES&apos; SPECIALS
-            </h2>
-            <Frame variant="chalkboard" className="p-6">
-              <ul>
+            <div
+              style={{
+                background: "#FF00FF",
+                color: "#000000",
+                padding: "4px 12px",
+                fontSize: "1em",
+                marginTop: "8px",
+              }}
+            >
+              ACT 2 — BOOKIES&apos; SPECIALS
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #FF00FF" }}>
+              <tbody>
                 {specials.map((s) => (
-                  <li
-                    key={s.id}
-                    className="grid grid-cols-[4rem_1fr_auto] items-baseline gap-4 py-3 border-b border-cream/15 last:border-b-0"
-                  >
-                    <span className="font-display text-xl text-sepia tabular-nums">
+                  <tr key={s.id} style={{ borderBottom: "1px solid #222222" }}>
+                    <td style={{ padding: "5px 12px", color: "#00FF00", whiteSpace: "nowrap" }}>
                       £{s.payoutGbp}
-                    </span>
-                    <span className="font-display text-base text-cream leading-tight">
+                    </td>
+                    <td style={{ padding: "5px 12px", color: "#00FFFF", flex: 1 }}>
                       {s.label.toUpperCase()}
-                    </span>
-                    <span className="stamp text-cream border-cream/40">
-                      → {s.ownerParticipantId
+                    </td>
+                    <td style={{ padding: "5px 12px", textAlign: "right", color: "#FFFF00" }}>
+                      {s.ownerParticipantId
                         ? (idToName.get(s.ownerParticipantId) ?? "?")
                         : "—"}
-                    </span>
-                  </li>
+                    </td>
+                  </tr>
                 ))}
-              </ul>
-            </Frame>
+              </tbody>
+            </table>
           </section>
         </main>
       )}
+
       <SiteFooter />
     </div>
   );
