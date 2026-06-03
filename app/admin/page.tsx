@@ -82,10 +82,10 @@ export default async function AdminPage() {
   return (
     <div className="flex-1 flex flex-col">
       <MastheadBar signedInAs="ADMIN" />
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 grid gap-5">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 grid gap-5 lg:grid-cols-2">
 
         {/* ── Add Participant ─────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-4 sm:p-6 bg-cream">
+        <Frame variant="primary" className="p-4 sm:p-6 bg-cream lg:col-span-2">
           <Stamp tone="cobalt">THE PLAYERS</Stamp>
           <h2 className="font-display text-2xl mt-3">ADD PARTICIPANT</h2>
           <p className="font-mono text-sm text-ink/70 mt-2">
