@@ -7,6 +7,7 @@ import {
 } from "@/lib/db";
 import { getMatches, getCacheAge } from "@/lib/openfootball";
 import { computeStandings, computePotGbp } from "@/lib/leaderboard";
+import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
 import MastheadBar from "@/components/MastheadBar";
 import SiteFooter from "@/components/SiteFooter";
 import HeroStrip from "@/components/HeroStrip";
@@ -73,6 +74,17 @@ export default async function HomePage() {
 
   const standings = computeStandings(participants, allocation, matches);
   const potGbp = computePotGbp(participants.length);
+
+  // Fall back to defaults when no draw has run yet so the chalkboard
+  // always shows the bets, not "bookie is on holiday".
+  const displaySpecials =
+    specials.length > 0
+      ? specials
+      : DEFAULT_SPECIALS.map((s) => ({
+          ...s,
+          ownerParticipantId: null as string | null,
+          status: "pending" as const,
+        }));
   const heroInfo = formatMatchDayLabel(matches);
   const stale =
     cacheInfo.fetchedAt !== null &&
@@ -153,13 +165,13 @@ export default async function HomePage() {
             side wagers on unlikely events
           </p>
           <Frame variant="chalkboard" className="p-5">
-            {specials.length === 0 ? (
+            {displaySpecials.length === 0 ? (
               <p className="font-display text-cream/80">
                 THE BOOKIE IS ON HOLIDAY. NO SPECIALS THIS TOURNAMENT.
               </p>
             ) : (
               <ul>
-                {specials.map((s) => (
+                {displaySpecials.map((s) => (
                   <ChalkLine
                     key={s.id}
                     payoutGbp={s.payoutGbp}
