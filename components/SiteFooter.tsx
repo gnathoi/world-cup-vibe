@@ -6,33 +6,37 @@ export default function SiteFooter() {
       style={{
         background: "#0000FF",
         color: "#ffffff",
-        padding: "6px 10px",
+        padding: "4px 10px",
         display: "flex",
-        flexWrap: "wrap",
-        gap: "16px",
+        gap: "0",
         alignItems: "center",
         fontSize: "0.9em",
         borderTop: "2px solid #00FFFF",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
       }}
     >
-      <Link href="/" style={{ color: "#ffffff", textDecoration: "none" }}>
-        <span style={{ color: "#FFFF00" }}>100 </span>STANDINGS
-      </Link>
-      <Link href="/allocation" style={{ color: "#ffffff", textDecoration: "none" }}>
-        <span style={{ color: "#FFFF00" }}>101 </span>WHO HAS WHAT
-      </Link>
-      <Link href="/schedule" style={{ color: "#ffffff", textDecoration: "none" }}>
-        <span style={{ color: "#FFFF00" }}>200 </span>FIXTURES
-      </Link>
-      <Link href="/me" style={{ color: "#ffffff", textDecoration: "none" }}>
-        <span style={{ color: "#FFFF00" }}>300 </span>MY TEAMS
-      </Link>
-      <Link href="/ceremony" style={{ color: "#ffffff", textDecoration: "none" }}>
-        <span style={{ color: "#FFFF00" }}>400 </span>CEREMONY
-      </Link>
-      <Link href="/admin" style={{ color: "#ffffff", textDecoration: "none" }}>
-        <span style={{ color: "#FF00FF" }}>600 </span>ADMIN
-      </Link>
+      {[
+        { href: "/",          num: "100", label: "STAND" },
+        { href: "/allocation", num: "101", label: "ALLOC" },
+        { href: "/schedule",  num: "200", label: "FIX"   },
+        { href: "/me",        num: "300", label: "TEAMS" },
+        { href: "/ceremony",  num: "400", label: "CER"   },
+        { href: "/admin",     num: "600", label: "ADMIN", magenta: true },
+      ].map(({ href, num, label, magenta }) => (
+        <Link
+          key={href}
+          href={href}
+          style={{
+            color: "#ffffff",
+            textDecoration: "none",
+            padding: "0 10px 0 0",
+          }}
+        >
+          <span style={{ color: magenta ? "#FF00FF" : "#FFFF00" }}>{num} </span>
+          {label}
+        </Link>
+      ))}
       <span style={{ marginLeft: "auto" }}>
         <span className="tt-cursor">▌</span>
       </span>

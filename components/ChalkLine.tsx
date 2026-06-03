@@ -14,33 +14,29 @@ export default function ChalkLine({
   return (
     <li
       style={{
-        display: "grid",
-        gridTemplateColumns: "1fr auto auto",
-        gap: "8px",
-        alignItems: "baseline",
-        padding: "5px 0",
-        borderBottom: "1px dotted #333333",
+        padding: "6px 0",
+        borderBottom: "1px solid #1a1a1a",
       }}
     >
-      <span style={{ color: "#00FFFF", fontSize: "0.95em" }}>{label}</span>
-
-      <span style={{ color: "#00FF00", minWidth: "3.5em", textAlign: "right" }}>
-        £{payoutGbp}
-      </span>
-
-      <span style={{ minWidth: "9em", textAlign: "right" }}>
-        {status === "pending" ? (
-          <span style={{ color: "#ffffff", opacity: 0.5, fontSize: "0.85em" }}>PENDING</span>
-        ) : status === "claimed" ? (
-          <span className="tt-badge tt-badge-yellow">
-            {claimedByDisplayName ?? "CLAIMED"}
-          </span>
-        ) : (
-          <span style={{ color: "#FF0000", fontSize: "0.85em", textDecoration: "line-through" }}>
-            EXPIRED
-          </span>
-        )}
-      </span>
+      {/* Label row */}
+      <div style={{ color: "#00FFFF", fontSize: "0.9em", lineHeight: 1.2 }}>
+        {label}
+      </div>
+      {/* Payout + status row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
+        <span style={{ color: "#00FF00", fontSize: "1em" }}>£{payoutGbp}</span>
+        <span>
+          {status === "pending" ? (
+            <span style={{ color: "#ffffff", opacity: 0.4, fontSize: "0.8em" }}>PENDING</span>
+          ) : status === "claimed" ? (
+            <span className="tt-badge tt-badge-yellow" style={{ fontSize: "0.8em" }}>
+              {claimedByDisplayName ?? "CLAIMED"}
+            </span>
+          ) : (
+            <span style={{ color: "#FF0000", fontSize: "0.8em" }}>EXPIRED</span>
+          )}
+        </span>
+      </div>
     </li>
   );
 }

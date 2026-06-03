@@ -80,26 +80,14 @@ export default function MastheadBar({ signedInAs, pageNum = "P100" }: Props) {
           fontSize: "0.85em",
         }}
       >
-        <Link href="/" style={{ color: "#00FFFF", textDecoration: "none" }}>
-          100 STANDINGS
-        </Link>
-        <Link href="/allocation" style={{ color: "#00FFFF", textDecoration: "none" }}>
-          101 WHO HAS WHAT
-        </Link>
-        <Link href="/schedule" style={{ color: "#00FFFF", textDecoration: "none" }}>
-          200 FIXTURES
-        </Link>
+        <Link href="/" style={{ color: "#00FFFF", textDecoration: "none" }}>100 STAND</Link>
+        <Link href="/allocation" style={{ color: "#00FFFF", textDecoration: "none" }}>101 ALLOC</Link>
+        <Link href="/schedule" style={{ color: "#00FFFF", textDecoration: "none" }}>200 FIX</Link>
         {signedInAs && (
-          <Link href="/me" style={{ color: "#00FFFF", textDecoration: "none" }}>
-            300 MY TEAMS
-          </Link>
+          <Link href="/me" style={{ color: "#00FFFF", textDecoration: "none" }}>300 TEAMS</Link>
         )}
-        <Link href="/ceremony" style={{ color: "#00FFFF", textDecoration: "none" }}>
-          400 CEREMONY
-        </Link>
-        <Link href="/admin" style={{ color: "#FF00FF", textDecoration: "none" }}>
-          600 ADMIN
-        </Link>
+        <Link href="/ceremony" style={{ color: "#00FFFF", textDecoration: "none" }}>400 CER</Link>
+        <Link href="/admin" style={{ color: "#FF00FF", textDecoration: "none" }}>600 ADMIN</Link>
       </nav>
     </header>
   );
