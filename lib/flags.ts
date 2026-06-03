@@ -66,8 +66,22 @@ const FLAGS: Record<string, string> = {
   // Inter-confederation playoff
   BOL: "🇧🇴",
   IRQ: "🇮🇶",
+
+  // Extra teams in openfootball qualifying/playoff data.
+  // Codes are synthesised by the adapter (first 3 alpha chars of country name).
+  NOR: "🇳🇴", // Norway
+  SWE: "🇸🇪", // Sweden
+  CZE: "🇨🇿", // Czech Republic
+  HAI: "🇭🇹", // Haiti
+  BOS: "🇧🇦", // Bosnia & Herzegovina
+  CAP: "🇨🇻", // Cape Verde
+  CUR: "🇨🇼", // Curaçao
+  DRC: "🇨🇩", // DR Congo
+  SOU: "🇿🇦", // South Africa
 };
 
 export function flag(code: string): string {
-  return FLAGS[code] ?? "🏳️";
+  // Return empty string for unknown codes — TBD knockout slots synthesise
+  // single-letter codes like "A", "W", "L" that have no meaningful flag.
+  return FLAGS[code] ?? "";
 }
