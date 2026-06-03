@@ -85,6 +85,7 @@ function matchSatisfies(match: Match, special: Special): boolean {
     case "min_score_margin":
       return evaluateMinScoreMargin(match, special.condition.params);
     case "wooden_spoon":
+    case "team_consecutive_wins":
       return false; // handled separately in the cron route
     default:
       return false;

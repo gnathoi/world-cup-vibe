@@ -10,6 +10,7 @@ import {
   getSpecialCursor,
   setSpecialCursor,
 } from "@/lib/db";
+import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
 import { performDraw } from "@/lib/draw";
 import { refreshFromOpenfootball } from "@/lib/openfootball";
 import { evaluate } from "@/lib/specials/evaluate";
@@ -49,6 +50,18 @@ export async function togglePaidAction(formData: FormData) {
 }
 
 export async function refreshOpenfootballAction() {
+  // Seed specials if the table is empty (first run before draw).
+  const existing = await getSpecials();
+  if (existing.length === 0) {
+    await setSpecials(
+      DEFAULT_SPECIALS.map((s) => ({
+        ...s,
+        ownerParticipantId: null,
+        status: "pending" as const,
+      })),
+    );
+  }
+
   const result = await refreshFromOpenfootball();
   const [specials, cursor] = await Promise.all([
     getSpecials(),

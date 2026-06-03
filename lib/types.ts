@@ -52,7 +52,8 @@ export type SpecialConditionType =
   | "match_outcome"
   | "card_in_match"
   | "min_score_margin"
-  | "wooden_spoon";
+  | "wooden_spoon"
+  | "team_consecutive_wins";
 
 export type Special = {
   id: string;

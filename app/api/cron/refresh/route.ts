@@ -1,19 +1,20 @@
 // Vercel Cron entry — runs every 30 min (schedule in vercel.json).
 //
 // 1. Fetch + cache openfootball.
-// 2. Run the specials evaluator against the new snapshot.
-// 3. Persist any new claims.
-// 4. Auto-allocate teams if the tournament has started and no draw has run yet.
-// 5. Detect the wooden spoon winner (first player fully eliminated).
-// 6. Revalidate downstream pages.
+// 2. Seed specials from defaults if table is empty.
+// 3. Run the specials evaluator (match-level conditions).
+// 4. Detect wooden spoon (first fully-eliminated participant).
+// 5. Detect 6-match winning streak (first team to achieve it).
+// 6. Auto-allocate teams if the tournament has started and no draw has run.
+// 7. Revalidate downstream pages.
 
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { refreshFromOpenfootball } from "@/lib/openfootball";
 import {
   getSpecials,
-  getSpecialCursor,
   setSpecials,
+  getSpecialCursor,
   setSpecialCursor,
   getAllocation,
   getParticipants,
@@ -21,18 +22,16 @@ import {
   setWoodenSpoonWinner,
 } from "@/lib/db";
 import { evaluate } from "@/lib/specials/evaluate";
+import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
 import { computeStandings } from "@/lib/leaderboard";
 import { performDraw } from "@/lib/draw";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Teams allocated at or after this timestamp (midnight UTC on 11 June 2026).
 const ALLOCATION_UTC = new Date("2026-06-11T00:00:00Z").getTime();
 
 export async function GET(req: Request) {
-  // Vercel sends `Authorization: Bearer <CRON_SECRET>` for scheduled runs.
-  // Manual calls can pass ?secret=... in the query string.
   const expected = process.env.CRON_SECRET;
   if (expected) {
     const auth = req.headers.get("authorization") ?? "";
@@ -55,11 +54,30 @@ export async function GET(req: Request) {
     );
   }
 
-  // ── 2–3. Specials evaluation ───────────────────────────────────────────────
-  const [specials, cursor] = await Promise.all([
-    getSpecials(),
+  // ── 2. Seed specials if table is empty ────────────────────────────────────
+  let specials = await getSpecials();
+  if (specials.length === 0) {
+    specials = DEFAULT_SPECIALS.map((s) => ({
+      ...s,
+      ownerParticipantId: null,
+      status: "pending" as const,
+    }));
+    await setSpecials(specials);
+  }
+
+  // ── 3. Match-level specials evaluation ────────────────────────────────────
+  // Build team → participant map for attributing claims to team owners.
+  const [cursor, allocation] = await Promise.all([
     getSpecialCursor(),
+    getAllocation(),
   ]);
+
+  const teamOwner = new Map<string, string>();
+  if (allocation) {
+    for (const a of allocation.byParticipant) {
+      for (const code of a.teamCodes) teamOwner.set(code, a.participantId);
+    }
+  }
 
   const { newClaims, updatedCursor } = evaluate(
     fetchResult.matches,
@@ -68,35 +86,23 @@ export async function GET(req: Request) {
   );
 
   if (newClaims.length > 0) {
-    // Build a team → participantId lookup so we can attribute claims to the
-    // owner of the relevant team rather than a pre-assigned random holder.
-    const allocation = await getAllocation();
-    const teamOwner = new Map<string, string>();
-    if (allocation) {
-      for (const a of allocation.byParticipant) {
-        for (const code of a.teamCodes) teamOwner.set(code, a.participantId);
-      }
-    }
     const matchById = new Map(fetchResult.matches.map((m) => [m.id, m]));
-
     const map = new Map(specials.map((s) => [s.id, s] as const));
+
     for (const c of newClaims) {
       const s = map.get(c.specialId);
       const match = matchById.get(c.matchId);
       if (!s || !match) continue;
 
-      // Determine which participant's team triggered this event.
       let ownerParticipantId: string | null = s.ownerParticipantId ?? null;
       if (!ownerParticipantId) {
         if (s.condition.type === "min_score_margin" && match.score) {
-          // Award to the owner of the winning team.
           const winnerCode =
             match.score.home > match.score.away
               ? match.home.code
               : match.away.code;
           ownerParticipantId = teamOwner.get(winnerCode) ?? null;
         } else if (s.condition.type === "score_at_full_time") {
-          // 0-0: award to the home team's owner (consistent tiebreak).
           ownerParticipantId = teamOwner.get(match.home.code) ?? null;
         }
       }
@@ -109,34 +115,15 @@ export async function GET(req: Request) {
         claimedMatchId: c.matchId,
       });
     }
-    await setSpecials(Array.from(map.values()));
+    specials = Array.from(map.values());
+    await setSpecials(specials);
   }
 
   if (updatedCursor && updatedCursor !== cursor) {
     await setSpecialCursor(updatedCursor);
   }
 
-  // ── 4. Auto-allocate at tournament start ───────────────────────────────────
-  let autoAllocated = false;
-  if (Date.now() >= ALLOCATION_UTC) {
-    const allocation = await getAllocation();
-    if (!allocation) {
-      const participants = await getParticipants();
-      const eligible = participants.filter((p) => !p.spectator);
-      if (eligible.length > 0) {
-        try {
-          await performDraw();
-          autoAllocated = true;
-          revalidatePath("/ceremony");
-          revalidatePath("/admin");
-        } catch (err) {
-          console.error("auto-allocation failed", err);
-        }
-      }
-    }
-  }
-
-  // ── 5. Wooden spoon detection ──────────────────────────────────────────────
+  // ── 4. Wooden spoon detection ──────────────────────────────────────────────
   let woodenSpoonAwarded = false;
   const knockoutStarted = fetchResult.matches.some(
     (m) => m.round !== "group" && m.score,
@@ -144,42 +131,108 @@ export async function GET(req: Request) {
   if (knockoutStarted) {
     const existingWinner = await getWoodenSpoonWinner();
     if (!existingWinner) {
-      const [participants, allocation, currentSpecials] = await Promise.all([
-        getParticipants(),
-        getAllocation(),
-        getSpecials(),
-      ]);
+      const participants = await getParticipants();
       const standings = computeStandings(
         participants,
         allocation,
         fetchResult.matches,
       );
-      const eliminated = standings.filter((r) => !r.stillIn && r.teamCodes.length > 0);
+      const eliminated = standings.filter(
+        (r) => !r.stillIn && r.teamCodes.length > 0,
+      );
       if (eliminated.length > 0) {
-        eliminated.sort((a, b) => {
-          if (a.points !== b.points) return a.points - b.points;
-          return a.displayName.localeCompare(b.displayName);
-        });
+        eliminated.sort((a, b) =>
+          a.points !== b.points
+            ? a.points - b.points
+            : a.displayName.localeCompare(b.displayName),
+        );
         const winner = eliminated[0];
         await setWoodenSpoonWinner(winner.participantId);
-        // Also claim the wooden_spoon special in the specials table.
-        const woodenSpoonSpecial = currentSpecials.find(
-          (s) => s.condition.type === "wooden_spoon",
-        );
-        if (woodenSpoonSpecial && woodenSpoonSpecial.status === "pending") {
-          const updatedSpecials = currentSpecials.map((s) =>
-            s.id === woodenSpoonSpecial.id
-              ? {
-                  ...s,
-                  ownerParticipantId: winner.participantId,
-                  status: "claimed" as const,
-                  claimedAt: new Date().toISOString(),
-                }
-              : s,
+        const ws = specials.find((s) => s.condition.type === "wooden_spoon");
+        if (ws && ws.status === "pending") {
+          await setSpecials(
+            specials.map((s) =>
+              s.id === ws.id
+                ? {
+                    ...s,
+                    ownerParticipantId: winner.participantId,
+                    status: "claimed" as const,
+                    claimedAt: new Date().toISOString(),
+                  }
+                : s,
+            ),
           );
-          await setSpecials(updatedSpecials);
         }
         woodenSpoonAwarded = true;
+      }
+    }
+  }
+
+  // ── 5. Six-match winning streak detection ─────────────────────────────────
+  let streakAwarded = false;
+  const streakSpecial = specials.find(
+    (s) => s.condition.type === "team_consecutive_wins" && s.status === "pending",
+  );
+  if (streakSpecial) {
+    const minWins = Number(streakSpecial.condition.params.minWins ?? 6);
+    const finished = fetchResult.matches
+      .filter((m) => m.score)
+      .sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc));
+
+    const streaks = new Map<string, number>();
+    let firstAchiever: { teamCode: string; matchId: string } | null = null;
+
+    for (const m of finished) {
+      if (!m.score || firstAchiever) break;
+      const isDraw = m.score.home === m.score.away;
+      const winnerCode = isDraw
+        ? null
+        : m.score.home > m.score.away
+          ? m.home.code
+          : m.away.code;
+
+      for (const code of [m.home.code, m.away.code]) {
+        const prev = streaks.get(code) ?? 0;
+        const next = code === winnerCode ? prev + 1 : 0;
+        streaks.set(code, next);
+        if (next >= minWins && !firstAchiever) {
+          firstAchiever = { teamCode: code, matchId: m.id };
+        }
+      }
+    }
+
+    if (firstAchiever) {
+      const ownerId = teamOwner.get(firstAchiever.teamCode) ?? null;
+      await setSpecials(
+        specials.map((s) =>
+          s.id === streakSpecial.id
+            ? {
+                ...s,
+                ownerParticipantId: ownerId,
+                status: "claimed" as const,
+                claimedAt: new Date().toISOString(),
+                claimedMatchId: firstAchiever!.matchId,
+              }
+            : s,
+        ),
+      );
+      streakAwarded = true;
+    }
+  }
+
+  // ── 6. Auto-allocate at tournament start ───────────────────────────────────
+  let autoAllocated = false;
+  if (Date.now() >= ALLOCATION_UTC && !allocation) {
+    const participants = await getParticipants();
+    const eligible = participants.filter((p) => !p.spectator);
+    if (eligible.length > 0) {
+      try {
+        await performDraw();
+        autoAllocated = true;
+        revalidatePath("/ceremony");
+        revalidatePath("/admin");
+      } catch (err) {
+        console.error("auto-allocation failed", err);
       }
     }
   }
@@ -195,6 +248,6 @@ export async function GET(req: Request) {
     cursor: updatedCursor,
     autoAllocated,
     woodenSpoonAwarded,
-    reason: fetchResult.fresh ? undefined : fetchResult.reason,
+    streakAwarded,
   });
 }
