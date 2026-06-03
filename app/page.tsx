@@ -236,7 +236,7 @@ export default async function HomePage() {
         </div>
       </main>
 
-      <SiteFooter showAdminLink />
+      <SiteFooter />
 
       <style>{`
         @media (max-width: 700px) {

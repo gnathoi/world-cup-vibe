@@ -1,10 +1,6 @@
 import Link from "next/link";
 
-type Props = {
-  showAdminLink?: boolean;
-};
-
-export default function SiteFooter({ showAdminLink = false }: Props) {
+export default function SiteFooter() {
   return (
     <footer
       style={{
@@ -34,14 +30,9 @@ export default function SiteFooter({ showAdminLink = false }: Props) {
       <Link href="/ceremony" style={{ color: "#ffffff", textDecoration: "none" }}>
         <span style={{ color: "#FFFF00" }}>400 </span>CEREMONY
       </Link>
-      <Link href="/signin" style={{ color: "#ffffff", textDecoration: "none" }}>
-        <span style={{ color: "#FFFF00" }}>500 </span>SIGN IN
+      <Link href="/admin" style={{ color: "#ffffff", textDecoration: "none" }}>
+        <span style={{ color: "#FF00FF" }}>600 </span>ADMIN
       </Link>
-      {showAdminLink && (
-        <Link href="/admin" style={{ color: "#ffffff", textDecoration: "none" }}>
-          <span style={{ color: "#FFFF00" }}>600 </span>ADMIN
-        </Link>
-      )}
       <span style={{ marginLeft: "auto" }}>
         <span className="tt-cursor">▌</span>
       </span>

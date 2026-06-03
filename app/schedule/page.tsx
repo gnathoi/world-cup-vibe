@@ -188,7 +188,7 @@ export default async function SchedulePage() {
         })}
       </main>
 
-      <SiteFooter showAdminLink />
+      <SiteFooter />
     </div>
   );
 }

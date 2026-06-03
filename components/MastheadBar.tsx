@@ -97,11 +97,9 @@ export default function MastheadBar({ signedInAs, pageNum = "P100" }: Props) {
         <Link href="/ceremony" style={{ color: "#00FFFF", textDecoration: "none" }}>
           400 CEREMONY
         </Link>
-        {!signedInAs && (
-          <Link href="/signin" style={{ color: "#FFFF00", textDecoration: "none" }}>
-            500 SIGN IN
-          </Link>
-        )}
+        <Link href="/admin" style={{ color: "#FF00FF", textDecoration: "none" }}>
+          600 ADMIN
+        </Link>
       </nav>
     </header>
   );

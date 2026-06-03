@@ -131,7 +131,7 @@ export default async function AllocationPage() {
         )}
       </main>
 
-      <SiteFooter showAdminLink />
+      <SiteFooter />
     </div>
   );
 }
