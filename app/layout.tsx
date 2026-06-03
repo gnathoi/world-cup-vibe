@@ -26,6 +26,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Make America Goal Again",
   description: "A World Cup 2026 sweepstake for friends, played in the spirit of 1966.",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
