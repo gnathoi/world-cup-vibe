@@ -88,8 +88,8 @@ function MatchRow({ m }: { m: Match }) {
         <span className="font-display text-base sm:hidden">{m.away.code}</span>
       </span>
 
-      {/* Status stamp */}
-      <span className="shrink-0">
+      {/* Status stamp — hidden on mobile to avoid overflow */}
+      <span className="shrink-0 hidden sm:block">
         {isLive ? (
           <Stamp tone="scarlet">LIVE</Stamp>
         ) : m.status === "pen" ? (

@@ -7,30 +7,31 @@ type Props = {
 export default function MastheadBar({ signedInAs }: Props) {
   return (
     <header className="bg-scarlet text-cream">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-0 sm:h-20 flex items-center justify-between gap-3 sm:gap-6">
         <div
           aria-hidden
-          className="font-mono text-xs tracking-widest opacity-80 select-none"
+          className="hidden sm:block font-mono text-xs tracking-widest opacity-80 select-none shrink-0"
         >
           {"// // // // //"}
         </div>
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-1 min-w-0">
           <Link
             href="/"
-            className="font-display text-3xl sm:text-4xl tracking-tight text-center"
+            className="font-display text-xl sm:text-3xl lg:text-4xl tracking-tight text-center leading-tight"
           >
             GOAL! THE 2026 SWEEPSTAKE
           </Link>
-          <nav className="flex gap-4 font-mono text-xs tracking-widest text-cream/70">
+          <nav className="flex gap-3 sm:gap-4 font-mono text-xs tracking-widest text-cream/70">
             <Link href="/" className="hover:text-cream">STANDINGS</Link>
             <Link href="/schedule" className="hover:text-cream">FIXTURES</Link>
             {signedInAs && <Link href="/me" className="hover:text-cream">MY TEAMS</Link>}
           </nav>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0">
           {signedInAs ? (
-            <span className="stamp text-cream border-cream/60">
-              SIGNED IN — {signedInAs}
+            <span className="stamp text-cream border-cream/60 text-xs">
+              <span className="hidden sm:inline">SIGNED IN — </span>
+              {signedInAs}
             </span>
           ) : (
             <Link href="/signin" className="stamp text-cream border-cream/60">
