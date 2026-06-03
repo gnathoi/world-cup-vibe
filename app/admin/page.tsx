@@ -28,7 +28,7 @@ export default async function AdminPage() {
       <div className="flex-1 flex flex-col">
         <MastheadBar signedInAs="ADMIN" />
         <main className="flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 py-16">
-          <Frame variant="primary" className="p-6 sm:p-8 bg-cream">
+          <Frame variant="primary" className="p-8 sm:p-10 bg-cream">
             <Stamp tone="scarlet">RESTRICTED</Stamp>
             <h1 className="mt-4 font-display text-3xl text-ink">
               ADMIN ACCESS
@@ -85,7 +85,7 @@ export default async function AdminPage() {
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 grid gap-5 lg:grid-cols-2">
 
         {/* ── Add Participant ─────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-4 sm:p-6 bg-cream lg:col-span-2">
+        <Frame variant="primary" className="p-6 sm:p-8 bg-cream lg:col-span-2">
           <Stamp tone="cobalt">THE PLAYERS</Stamp>
           <h2 className="font-display text-2xl mt-3">ADD PARTICIPANT</h2>
           <p className="font-mono text-sm text-ink/70 mt-2">
@@ -138,7 +138,7 @@ export default async function AdminPage() {
         </Frame>
 
         {/* ── Refresh ─────────────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-4 sm:p-6 bg-cream">
+        <Frame variant="primary" className="p-6 sm:p-8 bg-cream">
           <Stamp tone="cobalt">THE WIRE</Stamp>
           <h2 className="font-display text-2xl mt-3">REFRESH OPENFOOTBALL</h2>
           <p className="font-mono text-sm text-ink/70 mt-2 break-words">{cacheAgeLabel}</p>
@@ -153,7 +153,7 @@ export default async function AdminPage() {
         </Frame>
 
         {/* ── Draw ────────────────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-4 sm:p-6 bg-cream">
+        <Frame variant="primary" className="p-6 sm:p-8 bg-cream">
           <Stamp tone="scarlet">THE DRAW</Stamp>
           <h2 className="font-display text-2xl mt-3">ALLOCATION OVERRIDE</h2>
           <p className="font-mono text-sm text-ink/70 mt-2 break-all">
@@ -188,7 +188,7 @@ export default async function AdminPage() {
         </Frame>
 
         {/* ── Paid-in Ledger ──────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-4 sm:p-6 bg-cream">
+        <Frame variant="primary" className="p-6 sm:p-8 bg-cream">
           <Stamp tone="cobalt">THE POT</Stamp>
           <h2 className="font-display text-2xl mt-3">PAID-IN LEDGER</h2>
           <ul className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-1">
@@ -216,7 +216,7 @@ export default async function AdminPage() {
         </Frame>
 
         {/* ── Specials ────────────────────────────────────────────────── */}
-        <Frame variant="primary" className="p-4 sm:p-6 bg-cream">
+        <Frame variant="primary" className="p-6 sm:p-8 bg-cream">
           <Stamp tone="sepia-dark">THE BOOKIE</Stamp>
           <h2 className="font-display text-2xl mt-3">SPECIALS</h2>
           <ul className="mt-4 divide-y divide-ink/10">
