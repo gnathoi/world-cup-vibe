@@ -1,4 +1,5 @@
 import Stamp from "./Stamp";
+import { flag } from "@/lib/flags";
 
 type Props = {
   rank: number;
@@ -44,7 +45,9 @@ export default function RankedRow({
       <ul className="col-span-1 flex flex-wrap gap-1.5">
         {teamCodes.slice(0, 6).map((code) => (
           <li key={code}>
-            <span className="stamp text-ink border-ink/40">{code}</span>
+            <span className="stamp text-ink border-ink/40">
+              {flag(code)} {code}
+            </span>
           </li>
         ))}
         {teamCodes.length > 6 ? (
