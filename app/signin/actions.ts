@@ -18,20 +18,12 @@ export async function signInAction(formData: FormData) {
     redirect("/signin?error=1");
   }
 
-  // nat authenticates against the ADMIN_PIN env var — no stored hash.
-  if (username.toLowerCase() === "nat") {
-    const pin = process.env.ADMIN_PIN ?? "";
-    if (!pin || password !== pin) {
-      redirect("/signin?error=1");
-    }
-  } else {
-    if (!participant.passwordHash) {
-      redirect("/signin?error=1");
-    }
-    const valid = await verifyPassword(password, participant.passwordHash);
-    if (!valid) {
-      redirect("/signin?error=1");
-    }
+  if (!participant.passwordHash) {
+    redirect("/signin?error=1");
+  }
+  const valid = await verifyPassword(password, participant.passwordHash);
+  if (!valid) {
+    redirect("/signin?error=1");
   }
 
   await setSession(participant);

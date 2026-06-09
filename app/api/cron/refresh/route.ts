@@ -1,12 +1,11 @@
-// Vercel Cron entry — runs every 30 min (schedule in vercel.json).
+// Vercel Cron entry — runs hourly (schedule in vercel.json).
 //
 // 1. Fetch + cache openfootball.
 // 2. Seed specials from defaults if table is empty.
 // 3. Run the specials evaluator (match-level conditions).
 // 4. Detect wooden spoon (first fully-eliminated participant).
 // 5. Detect 6-match winning streak (first team to achieve it).
-// 6. Auto-allocate teams if the tournament has started and no draw has run.
-// 7. Revalidate downstream pages.
+// 6. Revalidate downstream pages.
 
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
@@ -24,12 +23,9 @@ import {
 import { evaluate } from "@/lib/specials/evaluate";
 import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
 import { computeStandings } from "@/lib/leaderboard";
-import { performDraw } from "@/lib/draw";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const ALLOCATION_UTC = new Date("2026-06-11T00:00:00Z").getTime();
 
 export async function GET(req: Request) {
   const expected = process.env.CRON_SECRET;
@@ -220,23 +216,6 @@ export async function GET(req: Request) {
     }
   }
 
-  // ── 6. Auto-allocate at tournament start ───────────────────────────────────
-  let autoAllocated = false;
-  if (Date.now() >= ALLOCATION_UTC && !allocation) {
-    const participants = await getParticipants();
-    const eligible = participants.filter((p) => !p.spectator);
-    if (eligible.length > 0) {
-      try {
-        await performDraw();
-        autoAllocated = true;
-        revalidatePath("/ceremony");
-        revalidatePath("/admin");
-      } catch (err) {
-        console.error("auto-allocation failed", err);
-      }
-    }
-  }
-
   revalidatePath("/");
   revalidatePath("/me");
 
@@ -246,7 +225,6 @@ export async function GET(req: Request) {
     matches: fetchResult.matches.length,
     newClaims: newClaims.length,
     cursor: updatedCursor,
-    autoAllocated,
     woodenSpoonAwarded,
     streakAwarded,
   });
