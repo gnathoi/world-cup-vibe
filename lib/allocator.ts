@@ -66,24 +66,31 @@ export function allocate(
   const result: Record<string, string[]> = {};
   for (const p of ps) result[p.id] = [];
 
+  // Compute per-participant quotas so no one gets more than base+1 teams.
+  const base = Math.floor(ts.length / ps.length);
+  const extras = ts.length % ps.length;
+  const extraSet = new Set(shuffle([...ps], rng).slice(0, extras).map((p) => p.id));
+  const quotas = new Map(ps.map((p) => [p.id, extraSet.has(p.id) ? base + 1 : base]));
+
   // Distribute hosts first when guard applies, one per participant.
+  // Deduct from that participant's quota so the total stays correct.
   if (ps.length >= hosts.length) {
-    const recipients = shuffle(ps, rng).slice(0, hosts.length);
+    const recipients = shuffle([...ps], rng).slice(0, hosts.length);
     recipients.forEach((p, i) => {
       result[p.id].push(hosts[i].code);
+      quotas.set(p.id, quotas.get(p.id)! - 1);
     });
   } else {
-    // n < hosts: relax guard, push all hosts into the pool.
+    // n < hosts: relax guard, push all hosts into the non-host pool.
     nonHosts.push(...hosts);
   }
 
-  // Greedy round-robin over remaining teams, randomised start so
-  // the same person doesn't always get a slight edge.
-  const startIdx = Math.floor(rng() * ps.length);
-  let cursor = startIdx;
-  for (const team of shuffle(nonHosts, rng)) {
-    result[ps[cursor].id].push(team.code);
-    cursor = (cursor + 1) % ps.length;
+  // Fill remaining quota slots from the shuffled non-host pool.
+  const nonHostQueue = shuffle(nonHosts, rng);
+  let qi = 0;
+  for (const p of ps) {
+    const slots = quotas.get(p.id)!;
+    for (let i = 0; i < slots; i++) result[p.id].push(nonHostQueue[qi++].code);
   }
 
   // Sort each participant's teams alphabetically for stable display.

@@ -117,7 +117,7 @@ export default async function AllocationPage() {
                     <td style={{ padding: "6px 12px", textAlign: "right", verticalAlign: "top" }}>
                       {row.stillIn ? (
                         <span className="tt-badge tt-badge-green">
-                          {aliveTeams.length} ALIVE
+                          {aliveTeams.length} IN
                         </span>
                       ) : (
                         <span className="tt-badge tt-badge-red">OUT</span>
