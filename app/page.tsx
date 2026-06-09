@@ -74,7 +74,7 @@ export default async function HomePage() {
     ]);
 
   const standings = computeStandings(participants, allocation, matches);
-  const potGbp = computePotGbp(participants.length);
+  const potGbp = computePotGbp(participants.filter((p) => p.paidIn).length);
 
   const displaySpecials =
     specials.length > 0
@@ -150,12 +150,12 @@ export default async function HomePage() {
                   <tr style={{ borderBottom: "1px solid #333333" }}>
                     <th style={{ color: "#00FFFF", padding: "4px 8px 4px 10px", textAlign: "right", fontSize: "0.8em", fontWeight: "normal" }}>#</th>
                     <th style={{ color: "#00FFFF", padding: "4px 8px", textAlign: "left", fontSize: "0.8em", fontWeight: "normal" }}>PLAYER</th>
-                    <th style={{ color: "#00FFFF", padding: "4px 8px", textAlign: "right", fontSize: "0.8em", fontWeight: "normal" }}>ALIVE</th>
+                    <th style={{ color: "#00FFFF", padding: "4px 8px", textAlign: "right", fontSize: "0.8em", fontWeight: "normal" }}>IN</th>
                     <th style={{ color: "#00FFFF", padding: "4px 10px 4px 4px", fontSize: "0.8em", fontWeight: "normal" }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {standings.slice(0, 12).map((row, i) => (
+                  {standings.map((row, i) => (
                     <RankedRow
                       key={row.participantId}
                       rank={i + 1}
@@ -167,20 +167,6 @@ export default async function HomePage() {
                       isLeader={i === 0}
                     />
                   ))}
-                  {woodenSpoonWinnerId && (() => {
-                    const spoonRow = standings.find(r => r.participantId === woodenSpoonWinnerId);
-                    const spoonIdx = standings.findIndex(r => r.participantId === woodenSpoonWinnerId);
-                    if (!spoonRow || spoonIdx < 12) return null;
-                    return (
-                      <tr>
-                        <td colSpan={4} style={{ padding: "4px 10px", fontSize: "0.85em" }}>
-                          <span className="tt-badge tt-badge-yellow tt-flash">
-                            WOODEN SPOON: {spoonRow.displayName} £20
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })()}
                 </tbody>
               </table>
             )}

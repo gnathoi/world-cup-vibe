@@ -70,7 +70,7 @@ export default function RankedRow({
 
       <td style={{ padding: "5px 8px", textAlign: "right", verticalAlign: "middle", whiteSpace: "nowrap" }}>
         {aliveCount > 0 ? (
-          <span style={{ color: "#FFFF00", fontSize: "0.9em" }}>{aliveCount} ALIVE</span>
+          <span style={{ color: "#FFFF00", fontSize: "0.9em" }}>{aliveCount} IN</span>
         ) : (
           <span style={{ color: "#ffffff", opacity: 0.4, fontSize: "0.9em" }}>0</span>
         )}

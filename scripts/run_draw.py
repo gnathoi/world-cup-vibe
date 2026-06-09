@@ -69,19 +69,28 @@ def fisher_yates_draw(participants: list[str], rng: random.Random) -> dict[str, 
 
     result: dict[str, list[str]] = {p: [] for p in ps}
 
-    # Distribute hosts one-per-participant when possible
+    # Quota: base = floor(48/n), extras participants get base+1
+    base = len(TEAMS) // n
+    extras = len(TEAMS) % n
+    extra_ps = set(rng.sample(ps, k=extras))
+    quotas = {p: base + (1 if p in extra_ps else 0) for p in ps}
+
+    # Distribute hosts one-per-participant, deducting from quota
     if n >= len(hosts):
         recipients = rng.sample(ps, k=len(hosts))
         for p, h in zip(recipients, hosts):
             result[p].append(h)
+            quotas[p] -= 1
     else:
         non_hosts.extend(hosts)
 
-    # Round-robin the remaining teams from a random start
+    # Fill remaining quota slots from shuffled non-hosts
     rng.shuffle(non_hosts)
-    start = rng.randrange(n)
-    for i, team in enumerate(non_hosts):
-        result[ps[(start + i) % n]].append(team)
+    qi = 0
+    for p in ps:
+        for _ in range(quotas[p]):
+            result[p].append(non_hosts[qi])
+            qi += 1
 
     # Sort each participant's list for stable display
     for p in ps:

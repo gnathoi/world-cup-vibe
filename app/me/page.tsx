@@ -115,8 +115,8 @@ export default async function MePage() {
           }}
         >
           {[
-            { label: "RANK", value: myRank > 0 ? `${myRank} OF ${participants.length}` : "—" },
-            { label: "ALIVE", value: aliveCount > 0 ? `${aliveCount} TEAMS` : "NONE" },
+            { label: "RANK", value: myRank > 0 ? `${myRank} OF ${participants.filter((p) => !p.spectator).length}` : "—" },
+            { label: "IN", value: aliveCount > 0 ? `${aliveCount} TEAMS` : "NONE" },
             { label: "POT", value: `£${potGbp}` },
             { label: "SPECIALS", value: String(mySpecials.length) },
           ].map(({ label, value }, i) => (

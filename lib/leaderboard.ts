@@ -40,8 +40,10 @@ export function computeStandings(
   allocation: AllocationRecord | null,
   matches: Match[],
 ): StandingRow[] {
+  const eligible = participants.filter((p) => !p.spectator);
+
   if (!allocation) {
-    return participants.map((p) => ({
+    return eligible.map((p) => ({
       participantId: p.id,
       displayName: p.displayName,
       points: 0,
@@ -82,7 +84,7 @@ export function computeStandings(
     }
   }
 
-  const rows: StandingRow[] = participants.map((p) => {
+  const rows: StandingRow[] = eligible.map((p) => {
     const teamCodes =
       allocation.byParticipant.find((a) => a.participantId === p.id)
         ?.teamCodes ?? [];
