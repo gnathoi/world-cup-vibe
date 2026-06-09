@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PageCodeInput from "./PageCodeInput";
 
 type Props = {
   signedInAs?: string | null;
@@ -54,7 +55,7 @@ export default function MastheadBar({ signedInAs, pageNum = "P100" }: Props) {
 
       {/* Page num + date + username */}
       <div className="tt-masthead-top">
-        <span style={{ color: "#00FFFF", fontSize: "1em" }}>{pageNum}</span>
+        <PageCodeInput pageNum={pageNum} />
         <div style={{ textAlign: "right" }}>
           <span style={{ color: "#ffffff", fontSize: "0.8em" }}>{dateStr}</span>
           {signedInAs && (
