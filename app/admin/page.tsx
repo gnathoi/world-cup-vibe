@@ -4,7 +4,8 @@ import {
   getSpecials,
   getPotPaidBy,
 } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getSession, getCurrentParticipant } from "@/lib/auth";
 import { getCacheAge } from "@/lib/openfootball";
 import MastheadBar from "@/components/MastheadBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -58,6 +59,9 @@ const btnRed: React.CSSProperties = {
 };
 
 export default async function AdminPage() {
+  const me = await getCurrentParticipant();
+  if (!me) redirect("/signin");
+
   const session = await getSession();
 
   if (!session.adminVerified) {
