@@ -1,8 +1,7 @@
-// The 48 teams in the 2026 World Cup. Source of truth lives in openfootball;
-// this is the static fallback so the allocator can run before/without the
-// openfootball fetch (e.g. local dev, allocation ceremony).
+// The 48 teams in the 2026 World Cup. Source of truth:
+// https://raw.githubusercontent.com/openfootball/worldcup.json/refs/heads/master/2026/worldcup.teams.json
 //
-// Codes are FIFA 3-letter. Update with any qualifier surprises before kickoff.
+// Codes are FIFA 3-letter. Hosts guard in allocator uses HOST_NATIONS.
 
 import type { Team } from "./allocator";
 
@@ -21,16 +20,16 @@ export const TEAMS_2026: Team[] = [
   { code: "ESP", name: "Spain" },
   { code: "POR", name: "Portugal" },
   { code: "NED", name: "Netherlands" },
-  { code: "ITA", name: "Italy" },
   { code: "BEL", name: "Belgium" },
   { code: "CRO", name: "Croatia" },
-  { code: "DEN", name: "Denmark" },
   { code: "SUI", name: "Switzerland" },
   { code: "AUT", name: "Austria" },
-  { code: "POL", name: "Poland" },
-  { code: "SRB", name: "Serbia" },
   { code: "TUR", name: "Türkiye" },
   { code: "SCO", name: "Scotland" },
+  { code: "BIH", name: "Bosnia & Herzegovina" },
+  { code: "CZE", name: "Czech Republic" },
+  { code: "NOR", name: "Norway" },
+  { code: "SWE", name: "Sweden" },
 
   // CONMEBOL (6)
   { code: "ARG", name: "Argentina" },
@@ -46,10 +45,10 @@ export const TEAMS_2026: Team[] = [
   { code: "TUN", name: "Tunisia" },
   { code: "EGY", name: "Egypt" },
   { code: "ALG", name: "Algeria" },
-  { code: "NGA", name: "Nigeria" },
   { code: "CIV", name: "Ivory Coast" },
-  { code: "CMR", name: "Cameroon" },
   { code: "GHA", name: "Ghana" },
+  { code: "RSA", name: "South Africa" },
+  { code: "CPV", name: "Cape Verde" },
 
   // AFC (8)
   { code: "JPN", name: "Japan" },
@@ -59,19 +58,19 @@ export const TEAMS_2026: Team[] = [
   { code: "KSA", name: "Saudi Arabia" },
   { code: "QAT", name: "Qatar" },
   { code: "UZB", name: "Uzbekistan" },
-  { code: "JOR", name: "Jordan" },
+  { code: "IRQ", name: "Iraq" },
 
-  // CONCACAF (3 from CFU/CONCACAF qualifiers, in addition to hosts)
-  { code: "CRC", name: "Costa Rica" },
+  // CONCACAF (3, excluding hosts)
   { code: "PAN", name: "Panama" },
-  { code: "JAM", name: "Jamaica" },
+  { code: "CUW", name: "Curaçao" },
+  { code: "HAI", name: "Haiti" },
 
   // OFC (1)
   { code: "NZL", name: "New Zealand" },
 
-  // Inter-confederation playoff winners (2 placeholders, refine post-qualifying)
-  { code: "BOL", name: "Bolivia" },
-  { code: "IRQ", name: "Iraq" },
+  // Other (2)
+  { code: "JOR", name: "Jordan" },
+  { code: "COD", name: "DR Congo" },
 ];
 
 if (TEAMS_2026.length !== 48) {
