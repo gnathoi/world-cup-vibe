@@ -237,7 +237,7 @@ export async function refreshFromOpenfootball(
   let raw: unknown;
 
   try {
-    const resp = await fetch(url, { cache: "no-store" });
+    const resp = await fetch(url, { cache: "no-store", redirect: "error" });
     if (!resp.ok) {
       const cache = await getOpenfootballCache();
       if (cache) {

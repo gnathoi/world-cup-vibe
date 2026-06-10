@@ -20,12 +20,31 @@ import { performDraw } from "@/lib/draw";
 import { refreshFromOpenfootball } from "@/lib/openfootball";
 import { evaluate } from "@/lib/specials/evaluate";
 import { getSession } from "@/lib/auth";
+import { timingSafeEqual } from "node:crypto";
+
+// Constant-time string compare that never throws on length mismatch.
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
+// Guard for every mutating admin action. Server actions are independent POST
+// endpoints — the PIN gate on the page render does NOT protect them, so each
+// action must re-check the session flag or any signed-in player could call it.
+async function requireAdmin(): Promise<void> {
+  const session = await getSession();
+  if (!session.adminVerified) throw new Error("Admin access required.");
+}
 
 export async function verifyAdminPinAction(formData: FormData) {
   const pin = String(formData.get("pin") ?? "").trim();
   const expected = process.env.ADMIN_PIN;
-  if (!expected || pin !== expected) {
-    throw new Error("Incorrect PIN.");
+  // Wrong/missing PIN redirects back with an error flag instead of throwing —
+  // a thrown error renders the scary "A server error occurred" 500 page.
+  if (!expected || !safeEqual(pin, expected)) {
+    redirect("/admin?error=pin");
   }
   const session = await getSession();
   session.adminVerified = true;
@@ -34,6 +53,7 @@ export async function verifyAdminPinAction(formData: FormData) {
 }
 
 export async function addParticipantAction(formData: FormData) {
+  await requireAdmin();
   const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "").trim();
 
@@ -61,7 +81,9 @@ export async function addParticipantAction(formData: FormData) {
 }
 
 export async function reallocateAction(formData: FormData) {
+  await requireAdmin();
   const seed = String(formData.get("seed") ?? "").trim() || undefined;
+  if (seed && seed.length > 256) throw new Error("Seed too long (max 256 chars).");
   await performDraw(seed);
   revalidatePath("/");
   revalidatePath("/me");
@@ -70,6 +92,7 @@ export async function reallocateAction(formData: FormData) {
 }
 
 export async function togglePaidAction(formData: FormData) {
+  await requireAdmin();
   const participantId = String(formData.get("participantId") ?? "");
   if (!participantId) throw new Error("Missing participantId");
   const current = await getPotPaidBy();
@@ -82,6 +105,7 @@ export async function togglePaidAction(formData: FormData) {
 }
 
 export async function refreshOpenfootballAction() {
+  await requireAdmin();
   // Seed specials if the table is empty (first run before draw).
   const existing = await getSpecials();
   if (existing.length === 0) {
