@@ -24,7 +24,7 @@ import {
   setSpecialCursor,
 } from "../lib/db";
 import { allocate, assignByRandom } from "../lib/allocator";
-import { TEAMS_2026, HOST_NATIONS } from "../lib/teams";
+import { TEAMS_2026 } from "../lib/teams";
 import {
   DEFAULT_SPECIALS,
   specialReferencesTeam,
@@ -99,12 +99,7 @@ async function main() {
   console.log(`   got ${participants.length}: ${participants.map((p) => p.displayName).join(", ")}`);
 
   await step("4. allocate teams", async () => {
-    const { byParticipantId } = allocate(
-      participants,
-      TEAMS_2026,
-      DEMO_SEED,
-      HOST_NATIONS,
-    );
+    const { byParticipantId } = allocate(participants, TEAMS_2026, DEMO_SEED);
     await setAllocation({
       seed: DEMO_SEED,
       allocatedAt: new Date().toISOString(),

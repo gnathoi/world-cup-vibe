@@ -9,8 +9,7 @@ Steps:
   1. Fetch eligible participants (non-spectator) from Supabase.
   2. Run N random Fisher-Yates draws (default 10 000), distributing 48 teams
      as equally as possible (floor(48/players) each; remainder goes one-extra
-     to a random subset). Host-nation guard: USA/CAN/MEX each go to a
-     different participant when players >= 3.
+     to a random subset). Pure random — no host-nation guard.
   3. Tally how many times each (participant, team) pair appeared — proves
      uniformity — and save a heatmap to public/draw_distribution.png.
   4. Pick one draw at random from the 10 000 and write it to Supabase.
@@ -48,14 +47,11 @@ TEAMS = [
 ]
 assert len(TEAMS) == 48, f"Expected 48 teams, got {len(TEAMS)}"
 
-HOST_NATIONS = {"USA", "CAN", "MEX"}
-
 
 def fisher_yates_draw(participants: list[str], rng: random.Random) -> dict[str, list[str]]:
     """
-    Distribute TEAMS across participants as equally as possible.
-    Host-nation guard: USA/CAN/MEX go to three different participants
-    when len(participants) >= 3.
+    Distribute TEAMS across participants as equally as possible — pure random,
+    no host-nation guard (USA/CAN/MEX can land anywhere, including together).
     Returns dict: participant_id -> list of team codes.
     """
     n = len(participants)
@@ -65,9 +61,6 @@ def fisher_yates_draw(participants: list[str], rng: random.Random) -> dict[str, 
     teams = TEAMS[:]
     rng.shuffle(teams)
 
-    hosts = [t for t in teams if t in HOST_NATIONS]
-    non_hosts = [t for t in teams if t not in HOST_NATIONS]
-
     result: dict[str, list[str]] = {p: [] for p in ps}
 
     # Quota: base = floor(48/n), extras participants get base+1
@@ -76,22 +69,12 @@ def fisher_yates_draw(participants: list[str], rng: random.Random) -> dict[str, 
     extra_ps = set(rng.sample(ps, k=extras))
     quotas = {p: base + (1 if p in extra_ps else 0) for p in ps}
 
-    # Distribute hosts one-per-participant, deducting from quota
-    if n >= len(hosts):
-        recipients = rng.sample(ps, k=len(hosts))
-        for p, h in zip(recipients, hosts):
-            result[p].append(h)
-            quotas[p] -= 1
-    else:
-        non_hosts.extend(hosts)
-
-    # Fill remaining quota slots from shuffled non-hosts
-    rng.shuffle(non_hosts)
-    qi = 0
+    # Fill each participant's quota from the shuffled team pool.
+    ti = 0
     for p in ps:
         for _ in range(quotas[p]):
-            result[p].append(non_hosts[qi])
-            qi += 1
+            result[p].append(teams[ti])
+            ti += 1
 
     # Sort each participant's list for stable display
     for p in ps:

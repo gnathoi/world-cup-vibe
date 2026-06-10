@@ -6,7 +6,7 @@ import {
   setSpecials,
 } from "./db";
 import { allocate } from "./allocator";
-import { TEAMS_2026, HOST_NATIONS } from "./teams";
+import { TEAMS_2026 } from "./teams";
 import { DEFAULT_SPECIALS, specialReferencesTeam } from "./specials/defaults";
 import type { Special } from "./types";
 
@@ -19,12 +19,7 @@ export async function performDraw(seed?: string): Promise<void> {
   }
 
   const drawSeed = seed?.trim() || randomUUID();
-  const { byParticipantId } = allocate(
-    participants,
-    TEAMS_2026,
-    drawSeed,
-    HOST_NATIONS,
-  );
+  const { byParticipantId } = allocate(participants, TEAMS_2026, drawSeed);
 
   await setAllocation({
     seed: drawSeed,
