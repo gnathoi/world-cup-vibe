@@ -74,7 +74,9 @@ export default async function HomePage() {
     ]);
 
   const standings = computeStandings(participants, allocation, matches);
-  const potGbp = computePotGbp(participants.filter((p) => !p.spectator).length);
+  const potGbp = computePotGbp(
+    standings.reduce((n, r) => n + r.teamCodes.length, 0),
+  );
 
   const displaySpecials =
     specials.length > 0
