@@ -111,6 +111,13 @@ export async function GET(req: Request) {
           ownerParticipantId = teamOwner.get(winnerCode) ?? null;
         } else if (s.condition.type === "score_at_full_time") {
           ownerParticipantId = teamOwner.get(match.home.code) ?? null;
+        } else if (s.condition.type === "card_in_match") {
+          // Attribute to the owner of the team that received the (first) card
+          // matching the special's type.
+          const wantType =
+            String(s.condition.params.cardType) === "red" ? "red" : "yellow";
+          const card = match.cards.find((cd) => cd.cardType === wantType);
+          ownerParticipantId = card ? teamOwner.get(card.teamCode) ?? null : null;
         }
       }
 
@@ -144,18 +151,22 @@ export async function GET(req: Request) {
         allocation,
         fetchResult.matches,
       );
-      const eliminated = standings.filter(
-        (r) => !r.stillIn && r.teamCodes.length > 0,
-      );
-      if (eliminated.length > 0) {
-        eliminated.sort((a, b) =>
-          a.points !== b.points
-            ? a.points - b.points
-            : a.displayName.localeCompare(b.displayName),
+      const ws = specials.find((s) => s.condition.type === "wooden_spoon");
+      const teamsLost = Number(ws?.condition.params.teamsLost ?? 3);
+      // First player to lose `teamsLost` teams. Tie-break: most teams lost,
+      // then fewest points, then name (stable).
+      const losers = standings
+        .filter((r) => r.eliminatedCount >= teamsLost)
+        .sort((a, b) =>
+          b.eliminatedCount !== a.eliminatedCount
+            ? b.eliminatedCount - a.eliminatedCount
+            : a.points !== b.points
+              ? a.points - b.points
+              : a.displayName.localeCompare(b.displayName),
         );
-        const winner = eliminated[0];
+      if (losers.length > 0) {
+        const winner = losers[0];
         await setWoodenSpoonWinner(winner.participantId);
-        const ws = specials.find((s) => s.condition.type === "wooden_spoon");
         if (ws && ws.status === "pending") {
           await setSpecials(
             specials.map((s) =>

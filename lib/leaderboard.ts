@@ -21,6 +21,7 @@ export type StandingRow = {
   points: number;
   teamCodes: string[];
   stillIn: boolean;
+  eliminatedCount: number; // how many of this player's teams are knocked out
   goalsFor: number;
   goalsAgainst: number;
 };
@@ -49,6 +50,7 @@ export function computeStandings(
       points: 0,
       teamCodes: [],
       stillIn: false,
+      eliminatedCount: 0,
       goalsFor: 0,
       goalsAgainst: 0,
     }));
@@ -122,6 +124,7 @@ export function computeStandings(
       }
     }
 
+    const eliminatedCount = teamCodes.filter((code) => eliminated.has(code)).length;
     const stillIn = teamCodes.some((code) => !eliminated.has(code));
 
     return {
@@ -130,6 +133,7 @@ export function computeStandings(
       points,
       teamCodes,
       stillIn,
+      eliminatedCount,
       goalsFor,
       goalsAgainst,
     };
@@ -147,11 +151,11 @@ export function computeStandings(
   return rows;
 }
 
-// Pot total = base contribution per paid participant. v1 uses a fixed
-// per-head contribution; admin can override.
+// Pot total = a fixed contribution per allocated team. A player with 3 teams
+// contributes 3 × perTeamGbp; the pot is the sum across all allocated teams.
 export function computePotGbp(
-  paidCount: number,
-  contributionGbp: number = 10,
+  totalTeams: number,
+  perTeamGbp: number = 2.5,
 ): number {
-  return paidCount * contributionGbp;
+  return totalTeams * perTeamGbp;
 }
