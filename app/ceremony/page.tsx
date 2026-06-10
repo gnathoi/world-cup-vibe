@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getAllocation, getParticipants, getSpecials } from "@/lib/db";
 import MastheadBar from "@/components/MastheadBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -7,8 +8,10 @@ import { flag } from "@/lib/flags";
 export const dynamic = "force-dynamic";
 
 export default async function CeremonyPage() {
-  const [me, allocation, participants, specials] = await Promise.all([
-    getCurrentParticipant(),
+  const me = await getCurrentParticipant();
+  if (!me) redirect("/signin");
+
+  const [allocation, participants, specials] = await Promise.all([
     getAllocation(),
     getParticipants(),
     getSpecials(),

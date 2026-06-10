@@ -34,16 +34,17 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env.local")
 
 # 48 teams — mirrors lib/teams.ts
+# Source: https://raw.githubusercontent.com/openfootball/worldcup.json/refs/heads/master/2026/worldcup.teams.json
 TEAMS = [
     "USA", "CAN", "MEX",
-    "ENG", "FRA", "GER", "ESP", "POR", "NED", "ITA", "BEL",
-    "CRO", "DEN", "SUI", "AUT", "POL", "SRB", "TUR", "SCO",
+    "ENG", "FRA", "GER", "ESP", "POR", "NED", "BEL",
+    "CRO", "SUI", "AUT", "TUR", "SCO", "BIH", "CZE", "NOR", "SWE",
     "ARG", "BRA", "URU", "COL", "ECU", "PAR",
-    "MAR", "SEN", "TUN", "EGY", "ALG", "NGA", "CIV", "CMR", "GHA",
-    "JPN", "KOR", "AUS", "IRN", "KSA", "QAT", "UZB", "JOR",
-    "CRC", "PAN", "JAM",
+    "MAR", "SEN", "TUN", "EGY", "ALG", "CIV", "GHA", "RSA", "CPV",
+    "JPN", "KOR", "AUS", "IRN", "KSA", "QAT", "UZB", "IRQ",
+    "PAN", "CUW", "HAI",
     "NZL",
-    "BOL", "IRQ",
+    "JOR", "COD",
 ]
 assert len(TEAMS) == 48, f"Expected 48 teams, got {len(TEAMS)}"
 
