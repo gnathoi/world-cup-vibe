@@ -118,29 +118,27 @@ describe("allocate — distribution", () => {
   });
 });
 
-describe("allocate — host-nation guard", () => {
-  it("with n >= 3, no participant gets more than one host nation", () => {
+describe("allocate — pure random (no host-nation guard)", () => {
+  it("every team is allocated exactly once, hosts included", () => {
     const ts = teams("USA", "CAN", "MEX", ...teamsRange("T", 45).map((t) => t.code));
-    const result = allocate(PARTICIPANTS_3, ts, "host-guard");
-    for (const codes of Object.values(result.byParticipantId)) {
-      const hosts = codes.filter((c) =>
-        ["USA", "CAN", "MEX"].includes(c),
-      );
-      expect(hosts.length).toBeLessThanOrEqual(1);
-    }
+    const result = allocate(PARTICIPANTS_3, ts, "pure-random");
+    const allCodes = Object.values(result.byParticipantId).flat();
+    expect(allCodes).toHaveLength(48);
+    expect(new Set(allCodes).size).toBe(48); // no dupes, none dropped
   });
 
-  it("with n < 3 hosts (n=2), guard relaxes — hosts may pile up", () => {
-    const ts = teams("USA", "CAN", "MEX", "BRA", "ARG");
-    const result = allocate(
-      PARTICIPANTS_3.slice(0, 2),
-      ts,
-      "small-pool",
-    );
-    const allHosts = ["USA", "CAN", "MEX"];
-    const sizes = Object.values(result.byParticipantId).map(
-      (arr) => arr.filter((c) => allHosts.includes(c)).length,
-    );
-    expect(sizes.reduce((a, b) => a + b, 0)).toBe(3); // all 3 still allocated
+  it("host nations may pile up on one participant", () => {
+    // Find a seed where all three hosts land on the same participant — proves
+    // the guard is gone. With pure randomness this is reachable.
+    const ts = teams("USA", "CAN", "MEX", ...teamsRange("T", 45).map((t) => t.code));
+    let piledUp = false;
+    for (let i = 0; i < 200 && !piledUp; i++) {
+      const result = allocate(PARTICIPANTS_3, ts, `seed-${i}`);
+      piledUp = Object.values(result.byParticipantId).some(
+        (codes) =>
+          codes.filter((c) => ["USA", "CAN", "MEX"].includes(c)).length >= 2,
+      );
+    }
+    expect(piledUp).toBe(true);
   });
 });

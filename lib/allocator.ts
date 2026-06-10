@@ -1,7 +1,7 @@
 // Deterministic team allocator.
 //
 // Contract:
-//   allocate(participants, teams, seed, hostNations) -> Map<participant, team[]>
+//   allocate(participants, teams, seed) -> Map<participant, team[]>
 //   Same seed + same inputs (length and ordering ignored — we sort) always
 //   produces the same output map. Reproducibility is non-negotiable: the
 //   ceremony page replays from the persisted seed.
@@ -10,9 +10,8 @@
 //   1. Each participant receives floor(48/n) teams.
 //   2. The remaining (48 mod n) teams are distributed to a randomly chosen
 //      subset of participants (one extra team each).
-//   3. Host-nation guard: USA / CAN / MEX are flagged. If n >= 3, no single
-//      participant owns more than one of the three. If n < 3, all hosts go
-//      to whoever — the constraint relaxes.
+//   3. Pure random — no host-nation guard. USA / CAN / MEX can land anywhere,
+//      including all on the same participant.
 //   4. If n > teams, throw — there is not enough to go around.
 
 import seedrandom from "seedrandom";
@@ -34,13 +33,10 @@ export class AllocatorError extends Error {
   }
 }
 
-const DEFAULT_HOST_NATIONS = ["USA", "CAN", "MEX"];
-
 export function allocate(
   participants: Participant[],
   teams: Team[],
   seed: string,
-  hostNationCodes: string[] = DEFAULT_HOST_NATIONS,
 ): AllocationResult {
   if (participants.length === 0) {
     throw new AllocatorError("Cannot allocate with zero participants.");
@@ -58,11 +54,6 @@ export function allocate(
   const rng = seedrandom(seed);
   const shuffledTeams = shuffle(ts, rng);
 
-  // Split teams into hosts and non-hosts. Apply guard only when n >= hosts.
-  const hostsSet = new Set(hostNationCodes);
-  const hosts = shuffledTeams.filter((t) => hostsSet.has(t.code));
-  const nonHosts = shuffledTeams.filter((t) => !hostsSet.has(t.code));
-
   const result: Record<string, string[]> = {};
   for (const p of ps) result[p.id] = [];
 
@@ -72,25 +63,11 @@ export function allocate(
   const extraSet = new Set(shuffle([...ps], rng).slice(0, extras).map((p) => p.id));
   const quotas = new Map(ps.map((p) => [p.id, extraSet.has(p.id) ? base + 1 : base]));
 
-  // Distribute hosts first when guard applies, one per participant.
-  // Deduct from that participant's quota so the total stays correct.
-  if (ps.length >= hosts.length) {
-    const recipients = shuffle([...ps], rng).slice(0, hosts.length);
-    recipients.forEach((p, i) => {
-      result[p.id].push(hosts[i].code);
-      quotas.set(p.id, quotas.get(p.id)! - 1);
-    });
-  } else {
-    // n < hosts: relax guard, push all hosts into the non-host pool.
-    nonHosts.push(...hosts);
-  }
-
-  // Fill remaining quota slots from the shuffled non-host pool.
-  const nonHostQueue = shuffle(nonHosts, rng);
+  // Pure random fill from the shuffled team pool — no host-nation guard.
   let qi = 0;
   for (const p of ps) {
     const slots = quotas.get(p.id)!;
-    for (let i = 0; i < slots; i++) result[p.id].push(nonHostQueue[qi++].code);
+    for (let i = 0; i < slots; i++) result[p.id].push(shuffledTeams[qi++].code);
   }
 
   // Sort each participant's teams alphabetically for stable display.
