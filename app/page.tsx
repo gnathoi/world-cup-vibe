@@ -74,7 +74,7 @@ export default async function HomePage() {
     ]);
 
   const standings = computeStandings(participants, allocation, matches);
-  const potGbp = computePotGbp(participants.filter((p) => p.paidIn).length);
+  const potGbp = computePotGbp(participants.filter((p) => !p.spectator).length);
 
   const displaySpecials =
     specials.length > 0

@@ -58,13 +58,19 @@ const btnRed: React.CSSProperties = {
   border: "2px solid #FF0000",
 };
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const me = await getCurrentParticipant();
   if (!me) redirect("/signin");
 
   const session = await getSession();
 
   if (!session.adminVerified) {
+    const { error } = await searchParams;
+    const pinError = error === "pin";
     return (
       <div className="flex-1 flex flex-col">
         <MastheadBar signedInAs="ADMIN" pageNum="P600" />
@@ -85,6 +91,19 @@ export default async function AdminPage() {
               <div style={{ color: "#FFFF00", fontSize: "1.4em", marginBottom: "16px" }}>
                 ADMIN ACCESS
               </div>
+              {pinError && (
+                <div
+                  style={{
+                    background: "#FF0000",
+                    color: "#ffffff",
+                    padding: "6px 10px",
+                    marginBottom: "12px",
+                    fontSize: "0.9em",
+                  }}
+                >
+                  INCORRECT PIN — TRY AGAIN
+                </div>
+              )}
               <form action={verifyAdminPinAction} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <label>
                   <span style={labelStyle}>ENTER PIN:</span>

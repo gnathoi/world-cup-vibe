@@ -2,31 +2,32 @@
 // Most flags are derived from the ISO 3166-1 alpha-2 code (two regional
 // indicator letters). England and Scotland use Unicode tag sequences.
 
+// Keys MUST match the canonical codes in lib/teams.ts (TEAMS_2026).
 const FLAGS: Record<string, string> = {
   // Hosts
   USA: "🇺🇸",
   CAN: "🇨🇦",
   MEX: "🇲🇽",
 
-  // UEFA
+  // UEFA (16)
   ENG: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  SCO: "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
   FRA: "🇫🇷",
   GER: "🇩🇪",
   ESP: "🇪🇸",
   POR: "🇵🇹",
   NED: "🇳🇱",
-  ITA: "🇮🇹",
   BEL: "🇧🇪",
   CRO: "🇭🇷",
-  DEN: "🇩🇰",
   SUI: "🇨🇭",
   AUT: "🇦🇹",
-  POL: "🇵🇱",
-  SRB: "🇷🇸",
   TUR: "🇹🇷",
+  SCO: "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  BIH: "🇧🇦",
+  CZE: "🇨🇿",
+  NOR: "🇳🇴",
+  SWE: "🇸🇪",
 
-  // CONMEBOL
+  // CONMEBOL (6)
   ARG: "🇦🇷",
   BRA: "🇧🇷",
   URU: "🇺🇾",
@@ -34,18 +35,18 @@ const FLAGS: Record<string, string> = {
   ECU: "🇪🇨",
   PAR: "🇵🇾",
 
-  // CAF
+  // CAF (9)
   MAR: "🇲🇦",
   SEN: "🇸🇳",
   TUN: "🇹🇳",
   EGY: "🇪🇬",
   ALG: "🇩🇿",
-  NGA: "🇳🇬",
   CIV: "🇨🇮",
-  CMR: "🇨🇲",
   GHA: "🇬🇭",
+  RSA: "🇿🇦",
+  CPV: "🇨🇻",
 
-  // AFC
+  // AFC (8)
   JPN: "🇯🇵",
   KOR: "🇰🇷",
   AUS: "🇦🇺",
@@ -53,31 +54,19 @@ const FLAGS: Record<string, string> = {
   KSA: "🇸🇦",
   QAT: "🇶🇦",
   UZB: "🇺🇿",
-  JOR: "🇯🇴",
-
-  // CONCACAF
-  CRC: "🇨🇷",
-  PAN: "🇵🇦",
-  JAM: "🇯🇲",
-
-  // OFC
-  NZL: "🇳🇿",
-
-  // Inter-confederation playoff
-  BOL: "🇧🇴",
   IRQ: "🇮🇶",
 
-  // Extra teams in openfootball qualifying/playoff data.
-  // Codes are synthesised by the adapter (first 3 alpha chars of country name).
-  NOR: "🇳🇴", // Norway
-  SWE: "🇸🇪", // Sweden
-  CZE: "🇨🇿", // Czech Republic
-  HAI: "🇭🇹", // Haiti
-  BOS: "🇧🇦", // Bosnia & Herzegovina
-  CAP: "🇨🇻", // Cape Verde
-  CUR: "🇨🇼", // Curaçao
-  DRC: "🇨🇩", // DR Congo
-  SOU: "🇿🇦", // South Africa
+  // CONCACAF (3, excl. hosts)
+  PAN: "🇵🇦",
+  CUW: "🇨🇼",
+  HAI: "🇭🇹",
+
+  // OFC (1)
+  NZL: "🇳🇿",
+
+  // Other (2)
+  JOR: "🇯🇴",
+  COD: "🇨🇩",
 };
 
 export function flag(code: string): string {

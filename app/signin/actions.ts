@@ -27,5 +27,7 @@ export async function signInAction(formData: FormData) {
   }
 
   await setSession(participant);
-  redirect("/me");
+  // Spectators (the admin account) have no teams — send them to the admin
+  // panel instead of an empty /me page.
+  redirect(participant.spectator ? "/admin" : "/me");
 }

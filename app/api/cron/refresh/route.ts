@@ -9,6 +9,7 @@
 
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { timingSafeEqual } from "node:crypto";
 import { refreshFromOpenfootball } from "@/lib/openfootball";
 import {
   getSpecials,
@@ -27,15 +28,25 @@ import { computeStandings } from "@/lib/leaderboard";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
 export async function GET(req: Request) {
   const expected = process.env.CRON_SECRET;
-  if (expected) {
-    const auth = req.headers.get("authorization") ?? "";
-    const fromQuery = new URL(req.url).searchParams.get("secret") ?? "";
-    const supplied = auth.startsWith("Bearer ") ? auth.slice(7) : fromQuery;
-    if (supplied !== expected) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
+  // Fail closed: a missing secret denies access rather than opening the
+  // endpoint to the world.
+  if (!expected) {
+    return NextResponse.json({ error: "cron secret not configured" }, { status: 500 });
+  }
+  const auth = req.headers.get("authorization") ?? "";
+  const fromQuery = new URL(req.url).searchParams.get("secret") ?? "";
+  const supplied = auth.startsWith("Bearer ") ? auth.slice(7) : fromQuery;
+  if (!safeEqual(supplied, expected)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   // ── 1. Refresh openfootball ────────────────────────────────────────────────
