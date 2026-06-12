@@ -35,7 +35,14 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
   const day = `${d.getDate()} ${d
     .toLocaleString("en-GB", { month: "short" })
     .toUpperCase()}`;
-  const matchDay = ref?.matchDay ? `MATCH DAY ${ref.matchDay}` : "PRE-TOURNAMENT";
+  // Top line points at the next fixture's date, not a fixture/day number. Once
+  // every match is played there's nothing "next", so fall back accordingly.
+  const matchDay =
+    matches.length === 0
+      ? "PRE-TOURNAMENT"
+      : nextScheduled
+        ? `NEXT · ${day}`
+        : "ALL PLAYED";
 
   let stage = "AWAITING KICKOFF";
   if (matches.length > 0) {
