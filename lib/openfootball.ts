@@ -20,9 +20,21 @@ const RawScoreSchema = z.object({
   ht: z.tuple([z.number(), z.number()]).optional(),
 });
 
+// openfootball now emits `minute` as a string to carry stoppage time
+// ("45+2"), and historically sent it as a number. Accept either and coerce to
+// an integer (base minute + added time, e.g. "45+2" -> 47).
+const MinuteSchema = z
+  .union([z.number(), z.string()])
+  .transform((v) => {
+    if (typeof v === "number") return v;
+    const m = v.match(/(\d+)(?:\s*\+\s*(\d+))?/);
+    if (!m) return 0;
+    return parseInt(m[1], 10) + (m[2] ? parseInt(m[2], 10) : 0);
+  });
+
 const RawGoalSchema = z.object({
   name: z.string(),
-  minute: z.number(),
+  minute: MinuteSchema,
   score: z.tuple([z.number(), z.number()]).optional(),
   owngoal: z.boolean().optional(),
   penalty: z.boolean().optional(),
@@ -30,7 +42,7 @@ const RawGoalSchema = z.object({
 
 const RawCardSchema = z.object({
   name: z.string(),
-  minute: z.number(),
+  minute: MinuteSchema,
   type: z.enum(["yellow", "red", "yellow_red"]).optional(),
 });
 

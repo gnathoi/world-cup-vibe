@@ -5,20 +5,15 @@ import { revalidatePath } from "next/cache";
 import {
   getPotPaidBy,
   setPotPaidBy,
-  getSpecials,
-  setSpecials,
-  getSpecialCursor,
-  setSpecialCursor,
   addParticipant,
   getParticipantByUsername,
   getAllocation,
 } from "@/lib/db";
-import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
 import { hashPassword } from "@/lib/password";
 import { randomUUID } from "node:crypto";
 import { performDraw } from "@/lib/draw";
 import { refreshFromOpenfootball } from "@/lib/openfootball";
-import { evaluate } from "@/lib/specials/evaluate";
+import { processSpecials } from "@/lib/specials/process";
 import { getSession } from "@/lib/auth";
 import { timingSafeEqual } from "node:crypto";
 
@@ -106,41 +101,16 @@ export async function togglePaidAction(formData: FormData) {
 
 export async function refreshOpenfootballAction() {
   await requireAdmin();
-  // Seed specials if the table is empty (first run before draw).
-  const existing = await getSpecials();
-  if (existing.length === 0) {
-    await setSpecials(
-      DEFAULT_SPECIALS.map((s) => ({
-        ...s,
-        ownerParticipantId: null,
-        status: "pending" as const,
-      })),
-    );
-  }
-
-  const result = await refreshFromOpenfootball();
-  const [specials, cursor] = await Promise.all([
-    getSpecials(),
-    getSpecialCursor(),
-  ]);
-  const { newClaims, updatedCursor } = evaluate(result.matches, specials, cursor);
-  if (newClaims.length > 0) {
-    const map = new Map(specials.map((s) => [s.id, s] as const));
-    for (const c of newClaims) {
-      const s = map.get(c.specialId);
-      if (s) {
-        map.set(c.specialId, {
-          ...s,
-          status: "claimed",
-          claimedAt: c.claimedAt,
-          claimedMatchId: c.matchId,
-        });
-      }
-    }
-    await setSpecials(Array.from(map.values()));
-  }
-  if (updatedCursor && updatedCursor !== cursor) {
-    await setSpecialCursor(updatedCursor);
+  // Wrap the fetch so a malformed upstream payload surfaces as a friendly
+  // message instead of the scary "A server error occurred" 500 page. This
+  // runs the SAME pipeline as the hourly cron (seed → evaluate → attribute →
+  // wooden spoon → streak) via processSpecials, so the two paths can't drift.
+  try {
+    const result = await refreshFromOpenfootball();
+    await processSpecials(result.matches);
+  } catch (err) {
+    console.error("manual openfootball refresh failed", err);
+    redirect("/admin?error=refresh");
   }
   revalidatePath("/");
   revalidatePath("/me");
