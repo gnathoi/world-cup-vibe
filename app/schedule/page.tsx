@@ -49,6 +49,64 @@ function groupByDate(matches: Match[]): [string, Match[]][] {
   return Array.from(map.entries());
 }
 
+// Fixed column widths shared by every fixtures table so completed and upcoming
+// days line up regardless of their content (scores/badges vs "vs"/empty).
+const COL = { time: "62px", score: "58px", badge: "50px" } as const;
+
+function FixtureCols() {
+  return (
+    <colgroup>
+      <col style={{ width: COL.time }} />
+      <col />
+      <col style={{ width: COL.score }} />
+      <col />
+      <col style={{ width: COL.badge }} />
+    </colgroup>
+  );
+}
+
+function formatGoal(g: Match["goals"][number]): string {
+  const tags = `${g.isPenalty ? " (P)" : ""}${g.isOwnGoal ? " (OG)" : ""}`;
+  return `${g.scorerName} ${g.minute}'${tags}`;
+}
+
+function GoalsRow({ m }: { m: Match }) {
+  if (!m.goals || m.goals.length === 0) return null;
+  const byMinute = (a: Match["goals"][number], b: Match["goals"][number]) =>
+    a.minute - b.minute;
+  const home = m.goals.filter((g) => g.teamCode === m.home.code).sort(byMinute);
+  const away = m.goals.filter((g) => g.teamCode === m.away.code).sort(byMinute);
+
+  const lineStyle: React.CSSProperties = {
+    color: "#00FF00",
+    fontSize: "0.72em",
+    lineHeight: 1.5,
+    whiteSpace: "normal",
+  };
+
+  return (
+    <tr style={{ borderBottom: "1px solid #222222" }}>
+      <td />
+      <td style={{ ...lineStyle, padding: "0 6px 5px", textAlign: "right", verticalAlign: "top" }}>
+        {home.map((g, i) => (
+          <div key={i}>
+            {formatGoal(g)} <span style={{ opacity: 0.6 }}>⚽</span>
+          </div>
+        ))}
+      </td>
+      <td />
+      <td style={{ ...lineStyle, padding: "0 6px 5px", textAlign: "left", verticalAlign: "top" }}>
+        {away.map((g, i) => (
+          <div key={i}>
+            <span style={{ opacity: 0.6 }}>⚽</span> {formatGoal(g)}
+          </div>
+        ))}
+      </td>
+      <td />
+    </tr>
+  );
+}
+
 function MatchRow({ m }: { m: Match }) {
   const played = !!m.score;
   const isLive = m.status === "live";
@@ -56,37 +114,40 @@ function MatchRow({ m }: { m: Match }) {
   const isAet = m.status === "ap";
 
   return (
-    <tr style={{ borderBottom: "1px solid #222222" }}>
-      <td style={{ color: "#00FFFF", padding: "4px 8px", fontSize: "0.85em", whiteSpace: "nowrap" }}>
-        {formatKickoff(m.kickoffUtc)}
-      </td>
-      <td style={{ padding: "4px 6px", textAlign: "right", color: "#ffffff", fontSize: "0.95em", whiteSpace: "nowrap" }}>
-        {flag(m.home.code)} {m.home.code}
-      </td>
-      <td style={{ padding: "4px 6px", textAlign: "center", minWidth: "60px", fontSize: "1.1em", whiteSpace: "nowrap" }}>
-        {played ? (
-          <span style={{ color: isLive ? "#FF0000" : "#FFFF00" }}>
-            {m.score!.home}–{m.score!.away}
-          </span>
-        ) : (
-          <span style={{ color: "#333333" }}>vs</span>
-        )}
-      </td>
-      <td style={{ padding: "4px 6px", color: "#ffffff", fontSize: "0.95em", whiteSpace: "nowrap" }}>
-        {m.away.code} {flag(m.away.code)}
-      </td>
-      <td style={{ padding: "4px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
-        {isLive ? (
-          <span className="tt-badge tt-badge-red tt-flash">LIVE</span>
-        ) : isPens ? (
-          <span className="tt-badge tt-badge-yellow">PENS</span>
-        ) : isAet ? (
-          <span className="tt-badge tt-badge-yellow">AET</span>
-        ) : played ? (
-          <span className="tt-badge tt-badge-cyan">FT</span>
-        ) : null}
-      </td>
-    </tr>
+    <>
+      <tr style={{ borderBottom: played && m.goals.length > 0 ? "none" : "1px solid #222222" }}>
+        <td style={{ color: "#00FFFF", padding: "4px 8px", fontSize: "0.85em", whiteSpace: "nowrap" }}>
+          {formatKickoff(m.kickoffUtc)}
+        </td>
+        <td style={{ padding: "4px 6px", textAlign: "right", color: "#ffffff", fontSize: "0.95em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {flag(m.home.code)} {m.home.code}
+        </td>
+        <td style={{ padding: "4px 6px", textAlign: "center", fontSize: "1.1em", whiteSpace: "nowrap" }}>
+          {played ? (
+            <span style={{ color: isLive ? "#FF0000" : "#FFFF00" }}>
+              {m.score!.home}–{m.score!.away}
+            </span>
+          ) : (
+            <span style={{ color: "#333333" }}>vs</span>
+          )}
+        </td>
+        <td style={{ padding: "4px 6px", color: "#ffffff", fontSize: "0.95em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {m.away.code} {flag(m.away.code)}
+        </td>
+        <td style={{ padding: "4px 10px 4px 4px", textAlign: "right", whiteSpace: "nowrap" }}>
+          {isLive ? (
+            <span className="tt-badge tt-badge-red tt-flash">LIVE</span>
+          ) : isPens ? (
+            <span className="tt-badge tt-badge-yellow">PENS</span>
+          ) : isAet ? (
+            <span className="tt-badge tt-badge-yellow">AET</span>
+          ) : played ? (
+            <span className="tt-badge tt-badge-cyan">FT</span>
+          ) : null}
+        </td>
+      </tr>
+      {played && <GoalsRow m={m} />}
+    </>
   );
 }
 
@@ -174,7 +235,8 @@ export default async function SchedulePage() {
                   >
                     {roundLabel}
                   </div>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                    <FixtureCols />
                     <tbody>
                       {roundMatches.map((m) => (
                         <MatchRow key={m.id} m={m} />
