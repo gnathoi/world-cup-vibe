@@ -1,29 +1,16 @@
 // Vercel Cron entry — runs hourly (schedule in vercel.json).
 //
 // 1. Fetch + cache openfootball.
-// 2. Seed specials from defaults if table is empty.
-// 3. Run the specials evaluator (match-level conditions).
-// 4. Detect wooden spoon (first fully-eliminated participant).
-// 5. Detect 6-match winning streak (first team to achieve it).
-// 6. Revalidate downstream pages.
+// 2. Run processSpecials (shared with the admin manual-refresh action):
+//    seed defaults -> evaluate match conditions -> attribute claims to owners
+//    -> detect wooden spoon -> detect 6-match winning streak.
+// 3. Revalidate downstream pages.
 
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { timingSafeEqual } from "node:crypto";
 import { refreshFromOpenfootball } from "@/lib/openfootball";
-import {
-  getSpecials,
-  setSpecials,
-  getSpecialCursor,
-  setSpecialCursor,
-  getAllocation,
-  getParticipants,
-  getWoodenSpoonWinner,
-  setWoodenSpoonWinner,
-} from "@/lib/db";
-import { evaluate } from "@/lib/specials/evaluate";
-import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
-import { computeStandings } from "@/lib/leaderboard";
+import { processSpecials } from "@/lib/specials/process";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,182 +48,8 @@ export async function GET(req: Request) {
     );
   }
 
-  // ── 2. Seed specials if table is empty ────────────────────────────────────
-  let specials = await getSpecials();
-  if (specials.length === 0) {
-    specials = DEFAULT_SPECIALS.map((s) => ({
-      ...s,
-      ownerParticipantId: null,
-      status: "pending" as const,
-    }));
-    await setSpecials(specials);
-  }
-
-  // ── 3. Match-level specials evaluation ────────────────────────────────────
-  // Build team → participant map for attributing claims to team owners.
-  const [cursor, allocation] = await Promise.all([
-    getSpecialCursor(),
-    getAllocation(),
-  ]);
-
-  const teamOwner = new Map<string, string>();
-  if (allocation) {
-    for (const a of allocation.byParticipant) {
-      for (const code of a.teamCodes) teamOwner.set(code, a.participantId);
-    }
-  }
-
-  const { newClaims, updatedCursor } = evaluate(
-    fetchResult.matches,
-    specials,
-    cursor,
-  );
-
-  if (newClaims.length > 0) {
-    const matchById = new Map(fetchResult.matches.map((m) => [m.id, m]));
-    const map = new Map(specials.map((s) => [s.id, s] as const));
-
-    for (const c of newClaims) {
-      const s = map.get(c.specialId);
-      const match = matchById.get(c.matchId);
-      if (!s || !match) continue;
-
-      let ownerParticipantId: string | null = s.ownerParticipantId ?? null;
-      if (!ownerParticipantId) {
-        if (s.condition.type === "min_score_margin" && match.score) {
-          const winnerCode =
-            match.score.home > match.score.away
-              ? match.home.code
-              : match.away.code;
-          ownerParticipantId = teamOwner.get(winnerCode) ?? null;
-        } else if (s.condition.type === "score_at_full_time") {
-          ownerParticipantId = teamOwner.get(match.home.code) ?? null;
-        } else if (s.condition.type === "card_in_match") {
-          // Attribute to the owner of the team that received the (first) card
-          // matching the special's type.
-          const wantType =
-            String(s.condition.params.cardType) === "red" ? "red" : "yellow";
-          const card = match.cards.find((cd) => cd.cardType === wantType);
-          ownerParticipantId = card ? teamOwner.get(card.teamCode) ?? null : null;
-        }
-      }
-
-      map.set(c.specialId, {
-        ...s,
-        ownerParticipantId,
-        status: "claimed",
-        claimedAt: c.claimedAt,
-        claimedMatchId: c.matchId,
-      });
-    }
-    specials = Array.from(map.values());
-    await setSpecials(specials);
-  }
-
-  if (updatedCursor && updatedCursor !== cursor) {
-    await setSpecialCursor(updatedCursor);
-  }
-
-  // ── 4. Wooden spoon detection ──────────────────────────────────────────────
-  let woodenSpoonAwarded = false;
-  const knockoutStarted = fetchResult.matches.some(
-    (m) => m.round !== "group" && m.score,
-  );
-  if (knockoutStarted) {
-    const existingWinner = await getWoodenSpoonWinner();
-    if (!existingWinner) {
-      const participants = await getParticipants();
-      const standings = computeStandings(
-        participants,
-        allocation,
-        fetchResult.matches,
-      );
-      const ws = specials.find((s) => s.condition.type === "wooden_spoon");
-      const teamsLost = Number(ws?.condition.params.teamsLost ?? 3);
-      // First player to lose `teamsLost` teams. Tie-break: most teams lost,
-      // then fewest points, then name (stable).
-      const losers = standings
-        .filter((r) => r.eliminatedCount >= teamsLost)
-        .sort((a, b) =>
-          b.eliminatedCount !== a.eliminatedCount
-            ? b.eliminatedCount - a.eliminatedCount
-            : a.points !== b.points
-              ? a.points - b.points
-              : a.displayName.localeCompare(b.displayName),
-        );
-      if (losers.length > 0) {
-        const winner = losers[0];
-        await setWoodenSpoonWinner(winner.participantId);
-        if (ws && ws.status === "pending") {
-          await setSpecials(
-            specials.map((s) =>
-              s.id === ws.id
-                ? {
-                    ...s,
-                    ownerParticipantId: winner.participantId,
-                    status: "claimed" as const,
-                    claimedAt: new Date().toISOString(),
-                  }
-                : s,
-            ),
-          );
-        }
-        woodenSpoonAwarded = true;
-      }
-    }
-  }
-
-  // ── 5. Six-match winning streak detection ─────────────────────────────────
-  let streakAwarded = false;
-  const streakSpecial = specials.find(
-    (s) => s.condition.type === "team_consecutive_wins" && s.status === "pending",
-  );
-  if (streakSpecial) {
-    const minWins = Number(streakSpecial.condition.params.minWins ?? 6);
-    const finished = fetchResult.matches
-      .filter((m) => m.score)
-      .sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc));
-
-    const streaks = new Map<string, number>();
-    let firstAchiever: { teamCode: string; matchId: string } | null = null;
-
-    for (const m of finished) {
-      if (!m.score || firstAchiever) break;
-      const isDraw = m.score.home === m.score.away;
-      const winnerCode = isDraw
-        ? null
-        : m.score.home > m.score.away
-          ? m.home.code
-          : m.away.code;
-
-      for (const code of [m.home.code, m.away.code]) {
-        const prev = streaks.get(code) ?? 0;
-        const next = code === winnerCode ? prev + 1 : 0;
-        streaks.set(code, next);
-        if (next >= minWins && !firstAchiever) {
-          firstAchiever = { teamCode: code, matchId: m.id };
-        }
-      }
-    }
-
-    if (firstAchiever) {
-      const ownerId = teamOwner.get(firstAchiever.teamCode) ?? null;
-      await setSpecials(
-        specials.map((s) =>
-          s.id === streakSpecial.id
-            ? {
-                ...s,
-                ownerParticipantId: ownerId,
-                status: "claimed" as const,
-                claimedAt: new Date().toISOString(),
-                claimedMatchId: firstAchiever!.matchId,
-              }
-            : s,
-        ),
-      );
-      streakAwarded = true;
-    }
-  }
+  // ── 2-5. Seed, evaluate, attribute, wooden spoon, streak ──────────────────
+  const summary = await processSpecials(fetchResult.matches);
 
   revalidatePath("/");
   revalidatePath("/me");
@@ -245,9 +58,6 @@ export async function GET(req: Request) {
     ok: true,
     fresh: fetchResult.fresh,
     matches: fetchResult.matches.length,
-    newClaims: newClaims.length,
-    cursor: updatedCursor,
-    woodenSpoonAwarded,
-    streakAwarded,
+    ...summary,
   });
 }

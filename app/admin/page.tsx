@@ -67,10 +67,10 @@ export default async function AdminPage({
   if (!me) redirect("/signin");
 
   const session = await getSession();
+  const { error: pageError } = await searchParams;
 
   if (!session.adminVerified) {
-    const { error } = await searchParams;
-    const pinError = error === "pin";
+    const pinError = pageError === "pin";
     return (
       <div className="flex-1 flex flex-col">
         <MastheadBar signedInAs="ADMIN" pageNum="P600" />
@@ -156,6 +156,19 @@ export default async function AdminPage({
         <div style={{ color: "#00FFFF", fontSize: "0.85em", marginTop: "2px" }}>
           {cacheAgeLabel}
         </div>
+        {pageError === "refresh" && (
+          <div
+            style={{
+              background: "#FF0000",
+              color: "#ffffff",
+              padding: "6px 10px",
+              marginTop: "8px",
+              fontSize: "0.85em",
+            }}
+          >
+            REFRESH FAILED — UPSTREAM DATA COULD NOT BE PARSED. SEE LOGS.
+          </div>
+        )}
       </section>
 
       <main
