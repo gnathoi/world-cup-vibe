@@ -7,6 +7,7 @@ import {
   getWoodenSpoonWinner,
 } from "@/lib/db";
 import { getMatches } from "@/lib/openfootball";
+import { flag } from "@/lib/flags";
 import { computeStandings, computePotGbp } from "@/lib/leaderboard";
 import { DEFAULT_SPECIALS } from "@/lib/specials/defaults";
 import MastheadBar from "@/components/MastheadBar";
@@ -35,13 +36,13 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
   const day = `${d.getDate()} ${d
     .toLocaleString("en-GB", { month: "short" })
     .toUpperCase()}`;
-  // Top line points at the next fixture's date, not a fixture/day number. Once
-  // every match is played there's nothing "next", so fall back accordingly.
-  const matchDay =
+  // Top line names the next fixture itself — flags + codes + date — rather than
+  // a fixture/day number. Falls back when there's nothing scheduled.
+  const label =
     matches.length === 0
       ? "PRE-TOURNAMENT"
       : nextScheduled
-        ? `NEXT · ${day}`
+        ? `NEXT · ${flag(nextScheduled.home.code)} ${nextScheduled.home.code} v ${nextScheduled.away.code} ${flag(nextScheduled.away.code)} · ${day}`
         : "ALL PLAYED";
 
   let stage = "AWAITING KICKOFF";
@@ -59,7 +60,7 @@ function formatMatchDayLabel(matches: Awaited<ReturnType<typeof getMatches>>): {
     }
   }
   return {
-    label: `${matchDay} / ${day}`,
+    label,
     stage,
     played,
     remaining,
