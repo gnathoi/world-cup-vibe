@@ -7,7 +7,11 @@ import {
   getWoodenSpoonWinner,
 } from "@/lib/db";
 import { getMatches } from "@/lib/openfootball";
-import { computeStandings, computePotGbp } from "@/lib/leaderboard";
+import {
+  computeStandings,
+  computePotGbp,
+  computeEliminatedTeams,
+} from "@/lib/leaderboard";
 import { TEAMS_2026 } from "@/lib/teams";
 import MastheadBar from "@/components/MastheadBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -57,9 +61,14 @@ export default async function MePage() {
   const mySpecials = specials.filter((s) => s.ownerParticipantId === me.id);
   const myTeamCodes = myRow?.teamCodes ?? [];
 
+  // A team's IN/OUT status uses the same shared rule as the standings table
+  // (group-stage non-qualifiers + pen/ET-aware knockout losers), so the two
+  // pages can never disagree. The W/D/L record below is display-only.
+  const eliminated = computeEliminatedTeams(matches);
+
   const teamRows = myTeamCodes.map((code) => {
     const team = TEAMS_2026.find((t) => t.code === code) ?? { code, name: code };
-    let w = 0, d = 0, l = 0, stillIn = true;
+    let w = 0, d = 0, l = 0;
     let nextOpponent: string | undefined;
 
     for (const m of matches) {
@@ -70,12 +79,13 @@ export default async function MePage() {
         const my = isHome ? m.score.home : m.score.away;
         const opp = isHome ? m.score.away : m.score.home;
         if (my > opp) w++;
-        else if (my < opp) { l++; if (m.round !== "group") stillIn = false; }
+        else if (my < opp) l++;
         else d++;
       } else if (!nextOpponent) {
         nextOpponent = isHome ? m.away.code : m.home.code;
       }
     }
+    const stillIn = !eliminated.has(code);
     return { code, name: team.name, record: { w, d, l }, stillIn, nextOpponent };
   });
 

@@ -81,7 +81,16 @@ export type Match = {
   home: { code: string; name: string };
   away: { code: string; name: string };
   status: "scheduled" | "live" | "ft" | "ap" | "pen";
-  score?: { home: number; away: number; ht?: { home: number; away: number } };
+  // `home`/`away` are the 90-minute (full-time) score. Knockout ties that go
+  // beyond 90' also carry `et` (score after extra time) and/or `pens` (the
+  // penalty shootout tally). The decisive result is pens > et > ft.
+  score?: {
+    home: number;
+    away: number;
+    ht?: { home: number; away: number };
+    et?: { home: number; away: number };
+    pens?: { home: number; away: number };
+  };
   goals: GoalEvent[];
   cards: CardEvent[];
 };
