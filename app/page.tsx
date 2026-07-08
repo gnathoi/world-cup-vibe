@@ -172,6 +172,7 @@ export default async function HomePage() {
                       displayName={row.displayName}
                       points={row.points}
                       teamCodes={row.teamCodes}
+                      eliminatedTeamCodes={row.eliminatedTeamCodes}
                       status={row.stillIn ? "still-in" : "eliminated"}
                       isYou={me?.id === row.participantId}
                       isLeader={i === 0}

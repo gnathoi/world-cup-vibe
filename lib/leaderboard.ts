@@ -20,6 +20,7 @@ export type StandingRow = {
   displayName: string;
   points: number;
   teamCodes: string[];
+  eliminatedTeamCodes: string[]; // subset of teamCodes that are knocked out
   stillIn: boolean;
   eliminatedCount: number; // how many of this player's teams are knocked out
   goalsFor: number;
@@ -119,6 +120,7 @@ export function computeStandings(
       displayName: p.displayName,
       points: 0,
       teamCodes: [],
+      eliminatedTeamCodes: [],
       stillIn: false,
       eliminatedCount: 0,
       goalsFor: 0,
@@ -173,7 +175,8 @@ export function computeStandings(
       }
     }
 
-    const eliminatedCount = teamCodes.filter((code) => eliminated.has(code)).length;
+    const eliminatedTeamCodes = teamCodes.filter((code) => eliminated.has(code));
+    const eliminatedCount = eliminatedTeamCodes.length;
     const stillIn = teamCodes.some((code) => !eliminated.has(code));
 
     return {
@@ -181,6 +184,7 @@ export function computeStandings(
       displayName: p.displayName,
       points,
       teamCodes,
+      eliminatedTeamCodes,
       stillIn,
       eliminatedCount,
       goalsFor,
