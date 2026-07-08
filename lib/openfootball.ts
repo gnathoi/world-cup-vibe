@@ -18,6 +18,9 @@ import type { CardEvent, GoalEvent, Match } from "./types";
 const RawScoreSchema = z.object({
   ft: z.tuple([z.number(), z.number()]).optional(),
   ht: z.tuple([z.number(), z.number()]).optional(),
+  // Knockout ties: `et` = score after extra time, `p` = penalty shootout tally.
+  et: z.tuple([z.number(), z.number()]).optional(),
+  p: z.tuple([z.number(), z.number()]).optional(),
 });
 
 // openfootball now emits `minute` as a string to carry stoppage time
@@ -89,6 +92,8 @@ function matchStatusFromScore(
   score: z.infer<typeof RawScoreSchema> | undefined,
 ): Match["status"] {
   if (!score?.ft) return "scheduled";
+  if (score.p) return "pen"; // decided on penalties
+  if (score.et) return "ap"; // decided after extra time (no shootout)
   return "ft";
 }
 
@@ -220,6 +225,12 @@ export function normalizeRaw(rawJson: unknown): Match[] {
             away: m.score.ft[1],
             ht: m.score.ht
               ? { home: m.score.ht[0], away: m.score.ht[1] }
+              : undefined,
+            et: m.score.et
+              ? { home: m.score.et[0], away: m.score.et[1] }
+              : undefined,
+            pens: m.score.p
+              ? { home: m.score.p[0], away: m.score.p[1] }
               : undefined,
           }
         : undefined,

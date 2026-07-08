@@ -36,6 +36,76 @@ const KNOCKOUT_ROUND_POINTS: Record<Match["round"], number> = {
   final: 5,
 };
 
+// The decisive score of a match: penalties beat extra time beats full time.
+// Group matches never carry et/pens, so this is just the 90-minute score there.
+function decisiveScore(
+  m: Match,
+): { home: number; away: number } | null {
+  if (!m.score) return null;
+  if (m.score.pens) return m.score.pens;
+  if (m.score.et) return m.score.et;
+  return { home: m.score.home, away: m.score.away };
+}
+
+// Winning team code of a match, or null if genuinely level (a draw at full
+// time with no shootout — normal for the group stage, shouldn't happen in the
+// knockouts but we guard against incomplete feed data rather than guess).
+function matchWinner(m: Match): string | null {
+  const s = decisiveScore(m);
+  if (!s) return null;
+  if (s.home > s.away) return m.home.code;
+  if (s.away > s.home) return m.away.code;
+  return null;
+}
+
+// A team is eliminated if EITHER:
+//   (a) the group stage finished and it didn't qualify for the knockouts, OR
+//   (b) it lost a knockout match — respecting extra time and penalties.
+// Prior versions only handled (b) via the 90-minute score, so group-stage
+// exits and shootout defeats were both missed and those teams looked "still in".
+export function computeEliminatedTeams(matches: Match[]): Set<string> {
+  const eliminated = new Set<string>();
+
+  // The real teams that actually played group games.
+  const groupTeams = new Set<string>();
+  for (const m of matches) {
+    if (m.round === "group") {
+      groupTeams.add(m.home.code);
+      groupTeams.add(m.away.code);
+    }
+  }
+
+  // Real teams that reached the knockout bracket: a group-stage team that turns
+  // up in any knockout fixture. Placeholder slots ("Winner Group A" → synthetic
+  // codes) never played a group game, so they're naturally excluded.
+  const knockoutTeams = new Set<string>();
+  for (const m of matches) {
+    if (m.round === "group") continue;
+    if (groupTeams.has(m.home.code)) knockoutTeams.add(m.home.code);
+    if (groupTeams.has(m.away.code)) knockoutTeams.add(m.away.code);
+  }
+
+  // (a) Group-stage non-qualifiers — but only once the bracket is drawn with
+  // real teams. Before that (mid-group-stage) knockoutTeams is empty and we
+  // must not declare anyone out on this basis.
+  if (knockoutTeams.size > 0) {
+    for (const code of groupTeams) {
+      if (!knockoutTeams.has(code)) eliminated.add(code);
+    }
+  }
+
+  // (b) Losers of decided knockout matches.
+  for (const m of matches) {
+    if (m.round === "group" || !m.score) continue;
+    const winner = matchWinner(m);
+    if (winner) {
+      eliminated.add(winner === m.home.code ? m.away.code : m.home.code);
+    }
+  }
+
+  return eliminated;
+}
+
 export function computeStandings(
   participants: Participant[],
   allocation: AllocationRecord | null,
@@ -62,29 +132,8 @@ export function computeStandings(
     for (const code of a.teamCodes) ownerOf.set(code, a.participantId);
   }
 
-  // Compute eliminations by walking matches. A team is eliminated once a
-  // knockout match it played in is lost.
-  const eliminated = new Set<string>();
-  for (const m of matches) {
-    if (!m.score) continue;
-    if (m.round === "group") continue;
-    // The loser of a knockout match is eliminated.
-    const winner =
-      m.score.home > m.score.away
-        ? m.home.code
-        : m.score.away > m.score.home
-        ? m.away.code
-        : null;
-    if (winner) {
-      const loser =
-        winner === m.home.code ? m.away.code : m.home.code;
-      eliminated.add(loser);
-    } else if (m.status === "pen" || m.status === "ap") {
-      // Penalty/extra-time outcome — openfootball usually carries final score;
-      // if it's a draw at FT but pen status, we can't tell from the simple model.
-      // Leave both as still-in for now and surface as a v2 follow-up.
-    }
-  }
+  // Eliminations: group-stage non-qualifiers + knockout losers (pen/ET aware).
+  const eliminated = computeEliminatedTeams(matches);
 
   const rows: StandingRow[] = eligible.map((p) => {
     const teamCodes =
@@ -106,7 +155,7 @@ export function computeStandings(
         if (m.round === "group") {
           if (m.score.home > m.score.away) points += 3;
           else if (m.score.home === m.score.away) points += 1;
-        } else if (m.round === "final" && m.score.home > m.score.away) {
+        } else if (m.round === "final" && matchWinner(m) === m.home.code) {
           points += 10;
         }
         points += KNOCKOUT_ROUND_POINTS[m.round] ?? 0;
@@ -117,7 +166,7 @@ export function computeStandings(
         if (m.round === "group") {
           if (m.score.away > m.score.home) points += 3;
           else if (m.score.home === m.score.away) points += 1;
-        } else if (m.round === "final" && m.score.away > m.score.home) {
+        } else if (m.round === "final" && matchWinner(m) === m.away.code) {
           points += 10;
         }
         points += KNOCKOUT_ROUND_POINTS[m.round] ?? 0;
