@@ -5,6 +5,7 @@ type Props = {
   displayName: string;
   points: number;
   teamCodes: string[];
+  eliminatedTeamCodes?: string[];
   status: "still-in" | "eliminated";
   isYou?: boolean;
   isLeader?: boolean;
@@ -15,6 +16,7 @@ export default function RankedRow({
   displayName,
   points,
   teamCodes,
+  eliminatedTeamCodes = [],
   status,
   isYou,
   isLeader,
@@ -29,7 +31,14 @@ export default function RankedRow({
     ? { color: "#FFFF00" }
     : { color: "#ffffff" };
 
-  const aliveCount = status === "still-in" ? teamCodes.length : 0;
+  const outCodes = new Set(eliminatedTeamCodes);
+  // Teams still in = allocated teams that aren't knocked out. Show alive first
+  // so the count and the badges below read consistently.
+  const orderedCodes = [
+    ...teamCodes.filter((c) => !outCodes.has(c)),
+    ...teamCodes.filter((c) => outCodes.has(c)),
+  ];
+  const aliveCount = teamCodes.length - outCodes.size;
 
   return (
     <tr style={rowStyle}>
@@ -59,11 +68,23 @@ export default function RankedRow({
           </span>
         )}
         {teamCodes.length > 0 && (
-          <div style={{ fontSize: "0.8em", color: "#ffffff", opacity: 0.65, marginTop: "2px" }}>
-            {teamCodes.slice(0, 5).map((c) => `${flag(c)} ${c}`).join("  ")}
-            {teamCodes.length > 5 && (
-              <span style={{ color: "#00FFFF" }}> +{teamCodes.length - 5}</span>
-            )}
+          <div style={{ fontSize: "0.8em", marginTop: "2px" }}>
+            {orderedCodes.map((c, i) => {
+              const isOut = outCodes.has(c);
+              return (
+                <span
+                  key={c}
+                  style={{
+                    color: "#ffffff",
+                    opacity: isOut ? 0.35 : 0.75,
+                    textDecoration: isOut ? "line-through" : "none",
+                    marginRight: i < orderedCodes.length - 1 ? "8px" : 0,
+                  }}
+                >
+                  {flag(c)} {c}
+                </span>
+              );
+            })}
           </div>
         )}
       </td>
